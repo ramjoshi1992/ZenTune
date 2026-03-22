@@ -202,6 +202,9 @@
     </main>
 
 <script>
+    // --- API CONFIGURATION ---
+    const API_BASE_URL = 'https://zentune.onrender.com';
+
     let ytPlayer, trackPool = [], poolIdx = 0, timerInterval = null, seconds = 0;
     let isPaused = false, goalReached = false, isFlowing = false;
     let userId = localStorage.getItem('zentune_id');
@@ -261,7 +264,7 @@
         const id = document.getElementById('uidInput').value.trim();
         if(!id) return;
         try {
-            const res = await fetch('http://127.0.0.1:5000/auth', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:id})});
+            const res = await fetch(`${API_BASE_URL}/auth`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:id})});
             const data = await res.json();
             if(data.status==='success') { 
                 userId = data.user_id; 
@@ -303,7 +306,7 @@
     async function fetchStats() {
         if(!userId) return;
         try {
-            const res = await fetch(`http://127.0.0.1:5000/stats/${userId}`);
+            const res = await fetch(`${API_BASE_URL}/stats/${userId}`);
             const d = await res.json();
             document.getElementById('sTotal').innerText = d.total ?? 0; 
             document.getElementById('sTime').innerText = d.total_time ?? "0h 0m";
@@ -321,7 +324,7 @@
         btn.disabled = true;
 
         try {
-            const res = await fetch('http://127.0.0.1:5000/identify', {
+            const res = await fetch(`${API_BASE_URL}/identify`, {
                 method:'POST', 
                 headers:{'Content-Type':'application/json'}, 
                 body:JSON.stringify({mood:mood, user_id: userId || "guest"})
@@ -389,7 +392,6 @@
         
         if (flowActive) {
             isFlowing = true;
-            // Timer keeps ticking in runTimer() because goalReached is true but isFlowing is also true
         } else {
             clearInterval(timerInterval);
             if(ytPlayer && ytPlayer.pauseVideo) ytPlayer.pauseVideo();
@@ -429,29 +431,23 @@
         if(ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
     }
 
-async function saveSessionToDB() {
-    if(!userId) return;
-
-    // Change this to your actual Render URL
-    const API_BASE_URL = 'https://zentune.onrender.com'; 
-
-    try {
-        await fetch(`${API_BASE_URL}/stop`, {
-            method: 'POST',
-            headers: {'Content-Type': 'application/json'},
-            body: JSON.stringify({
-                user_id: userId,
-                duration: seconds,
-                mood: document.getElementById('moodInput').value
-            })
-        });
-        
-        // Ensure fetchStats also uses the new live URL!
-        fetchStats(); 
-    } catch(e) { 
-        console.error("Save Error:", e); 
+    async function saveSessionToDB() {
+        if(!userId) return;
+        try {
+            await fetch(`${API_BASE_URL}/stop`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    user_id: userId,
+                    duration: seconds,
+                    mood: document.getElementById('moodInput').value
+                })
+            });
+            fetchStats(); 
+        } catch(e) { 
+            console.error("Save Error:", e); 
+        }
     }
-}
 </script>
 </body>
 </html>
