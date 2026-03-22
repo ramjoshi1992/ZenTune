@@ -22,7 +22,6 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            overflow-x: hidden;
         }
 
         .container {
@@ -31,18 +30,18 @@
             padding: 20px;
             width: 95%;
             max-width: 1200px;
-            flex-wrap: wrap;
-            justify-content: center;
+            margin-top: 20px;
         }
 
         /* Stats Panel */
         .insights-panel {
             flex: 1;
-            min-width: 300px;
+            min-width: 280px;
             background: var(--card-bg);
             padding: 20px;
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            height: fit-content;
         }
 
         .stat-card {
@@ -56,18 +55,19 @@
         /* Main Player Area */
         .aura-container {
             flex: 2;
-            min-width: 300px;
+            min-width: 320px;
             text-align: center;
         }
 
         #player-wrapper {
             position: relative;
             width: 100%;
-            padding-top: 56.25%; /* 16:9 Aspect Ratio */
+            padding-top: 56.25%; 
             background: #000;
             border-radius: 16px;
             overflow: hidden;
             margin-bottom: 20px;
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
         }
 
         #player {
@@ -84,19 +84,19 @@
             flex-direction: column;
             gap: 15px;
             background: var(--card-bg);
-            padding: 20px;
+            padding: 25px;
             border-radius: 16px;
         }
 
-        select, button {
-            padding: 12px;
+        input, select, button {
+            padding: 14px;
             border-radius: 8px;
             border: none;
             font-size: 1rem;
             outline: none;
         }
 
-        select {
+        input, select {
             background: #334155;
             color: white;
         }
@@ -104,21 +104,14 @@
         button {
             background: var(--accent);
             color: #0f172a;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
-            transition: transform 0.2s, background 0.2s;
-            /* Mobile Fixes */
+            transition: all 0.2s;
             position: relative;
-            z-index: 1000;
-            touch-action: manipulation;
-            -webkit-user-select: none;
-            user-select: none;
+            z-index: 10;
         }
 
-        button:active {
-            transform: scale(0.98);
-            background: #7dd3fc;
-        }
+        button:active { transform: scale(0.96); }
 
         #status-text {
             margin-top: 10px;
@@ -126,17 +119,16 @@
             color: #94a3b8;
         }
 
-        /* Responsive Mobile Layout */
-        @media (max-width: 768px) {
+        /* Responsive Fix (Stacks only on small phones) */
+        @media (max-width: 850px) {
             .container { flex-direction: column; align-items: center; }
             .insights-panel, .aura-container { width: 100%; }
-            button { height: 55px; }
         }
     </style>
 </head>
 <body>
 
-    <h1 style="margin-top: 20px; letter-spacing: -1px;">ZenTune <span style="color:var(--accent)">Pro</span></h1>
+    <h1 style="margin-top: 30px; letter-spacing: -1px;">ZenTune <span style="color:var(--accent)">Pro</span></h1>
 
     <div class="container">
         <div class="insights-panel">
@@ -149,10 +141,6 @@
                 <small>Core Frequency</small>
                 <h2 id="top-mood">None</h2>
             </div>
-            <div class="stat-card">
-                <small>Session Streak</small>
-                <h2 id="streak">0</h2>
-            </div>
         </div>
 
         <div class="aura-container">
@@ -161,18 +149,16 @@
             </div>
 
             <div class="controls">
-                <input type="text" id="user-id" placeholder="Enter User ID (e.g., Ram)" 
-                       style="padding:10px; border-radius:8px; border:none; margin-bottom:10px;">
+                <input type="text" id="user-id" placeholder="Enter User ID (e.g., Ram)">
                 
                 <select id="mood-select">
                     <option value="Focus">Focus (Alpha Waves)</option>
-                    <option value="Anxiety Relief">Anxiety Relief (Theta)</option>
-                    <option value="Deep Sleep Prep">Deep Sleep Prep</option>
+                    <option value="Anxiety Relief">Anxiety Relief</option>
                     <option value="Energy Boost">Morning Energy</option>
                     <option value="Creative Flow">Creative Flow</option>
                 </select>
 
-                <button id="calibrate-btn" onclick="calibrate()" ontouchstart="">Calibrate Aura</button>
+                <button id="calibrate-btn" onclick="calibrate()">Calibrate Aura</button>
                 <div id="status-text">Ready to sync...</div>
             </div>
         </div>
@@ -180,11 +166,9 @@
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        // CONFIGURATION - MUST BE HTTPS
         const API_BASE_URL = "https://zentune.onrender.com";
         let ytPlayer;
 
-        // Initialize YouTube Player
         function onYouTubeIframeAPIReady() {
             ytPlayer = new YT.Player('player', {
                 height: '100%',
@@ -193,20 +177,22 @@
                     'autoplay': 1,
                     'controls': 1,
                     'enablejsapi': 1,
-                    'origin': 'https://ramjoshi1992.github.io', // Dynamic origin for GitHub
-                    'playsinline': 1,               // Crucial for iPhone
-                    'rel': 0
+                    // HARCODED ORIGIN - This fixed the Playback ID error for most
+                    'origin': 'https://ramjoshi1992.github.io', 
+                    'playsinline': 1,
+                    'modestbranding': 1
                 },
                 events: {
                     'onReady': onPlayerReady,
-                    'onStateChange': onPlayerStateChange,
                     'onError': onPlayerError
                 }
             });
         }
 
         function onPlayerReady(event) {
-            console.log("Player is ready");
+            // Mute on start prevents browser from blocking the stream
+            event.target.mute(); 
+            console.log("Player Initialized Muted");
         }
 
         async function calibrate() {
@@ -220,13 +206,13 @@
                 return;
             }
 
-            // Mobile Handshake: Prime the player immediately on tap
+            // Important: Interaction handshake for mobile/desktop browsers
             if (ytPlayer && ytPlayer.playVideo) {
                 ytPlayer.playVideo(); 
                 ytPlayer.mute(); 
             }
 
-            statusText.innerText = "Analyzing Frequencies...";
+            statusText.innerText = "Connecting to Auras...";
             btn.innerText = "Syncing...";
 
             try {
@@ -236,39 +222,38 @@
                     body: JSON.stringify({ user_id: userId, mood: mood })
                 });
 
-                if (!response.ok) throw new Error("Server sleeping");
+                if (!response.ok) throw new Error("Server not responding");
 
                 const data = await response.json();
                 
-                // Update UI from Backend
                 document.getElementById('total-time').innerText = (data.total_focus_time || 0) + "m";
                 document.getElementById('top-mood').innerText = data.dominant_mood || mood;
                 
-                // Load Video
                 if (data.preview_url) {
-                    ytPlayer.loadVideoById(data.preview_url);
-                    ytPlayer.unMute();
-                    statusText.innerText = "Aura Synced Successfully!";
+                    // Using loadVideoById with suggestedQuality is more stable
+                    ytPlayer.loadVideoById({
+                        videoId: data.preview_url,
+                        suggestedQuality: 'default'
+                    });
+                    
+                    // Delay unmuting by 1 second to ensure the stream is established
+                    setTimeout(() => { ytPlayer.unMute(); }, 1500);
+                    statusText.innerText = "Aura Synced!";
                 }
             } catch (error) {
-                console.error("Error:", error);
-                statusText.innerText = "Server waking up... Tap again in 10 seconds.";
+                console.error("Fetch Error:", error);
+                statusText.innerText = "Server is waking up... Try again in 15s.";
             } finally {
                 btn.innerText = "Calibrate Aura";
             }
         }
 
         function onPlayerError(event) {
-            console.warn("YouTube Error:", event.data);
-            // If video is restricted (101/150/153), try to calibrate again or skip
+            console.warn("YouTube Error Code:", event.data);
+            // If restricted, automatically try another video
             if ([101, 150, 153].includes(event.data)) {
-                document.getElementById('status-text').innerText = "Video restricted. Auto-shuffling...";
                 calibrate(); 
             }
-        }
-
-        function onPlayerStateChange(event) {
-            // Handle video end or transitions here if needed
         }
     </script>
 </body>
