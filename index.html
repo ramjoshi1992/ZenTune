@@ -213,13 +213,13 @@ function onYouTubeIframeAPIReady() {
     ytPlayer = new YT.Player('player', {
         height: '100%',
         width: '100%',
-        playerVars: {
-            'autoplay': 1,
-            'controls': 1,
-            'enablejsapi': 1,
-            // This is the crucial line for GitHub Pages:
-            'origin': window.location.origin 
-        },
+        playerVars: { 
+    'autoplay': 1, 
+    'controls': 1, 
+    'enablejsapi': 1,
+    'origin': 'https://ramjoshi1992.github.io',
+    'playsinline': 1  // ADD THIS LINE: It allows video to play inside the webpage on mobile
+},
         events: {
             'onStateChange': onPlayerStateChange,
             'onError': onPlayerError // Add this to help skip broken videos
