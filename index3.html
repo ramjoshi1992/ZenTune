@@ -429,21 +429,29 @@
         if(ytPlayer && ytPlayer.stopVideo) ytPlayer.stopVideo();
     }
 
-    async function saveSessionToDB() {
-        if(!userId) return;
-        try {
-            await fetch('http://127.0.0.1:5000/stop', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    user_id: userId,
-                    duration: seconds,
-                    mood: document.getElementById('moodInput').value
-                })
-            });
-            fetchStats();
-        } catch(e) { console.error("Save Error:", e); }
+async function saveSessionToDB() {
+    if(!userId) return;
+
+    // Change this to your actual Render URL
+    const API_BASE_URL = 'https://zentune.onrender.com'; 
+
+    try {
+        await fetch(`${API_BASE_URL}/stop`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                user_id: userId,
+                duration: seconds,
+                mood: document.getElementById('moodInput').value
+            })
+        });
+        
+        // Ensure fetchStats also uses the new live URL!
+        fetchStats(); 
+    } catch(e) { 
+        console.error("Save Error:", e); 
     }
+}
 </script>
 </body>
 </html>
