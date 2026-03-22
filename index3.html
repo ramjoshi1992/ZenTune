@@ -209,7 +209,7 @@
 
     window.onload = () => { if(userId) showUser(userId); updateAura(); };
 
-    function onYouTubeIframeAPIReady() {
+function onYouTubeIframeAPIReady() {
     ytPlayer = new YT.Player('player', {
         height: '100%',
         width: '100%',
@@ -217,13 +217,23 @@
             'autoplay': 1,
             'controls': 1,
             'enablejsapi': 1,
-            'origin': window.location.origin // This tells YT who is asking for the video
+            // This is the crucial line for GitHub Pages:
+            'origin': window.location.origin 
         },
         events: {
             'onStateChange': onPlayerStateChange,
-            'onError': onPlayerError // Make sure this is added too
+            'onError': onPlayerError // Add this to help skip broken videos
         }
     });
+}
+
+// Add this function right below it to handle restricted videos
+function onPlayerError(event) {
+    console.warn("YouTube Player Error:", event.data);
+    // If the video is restricted or can't be embedded, automatically shuffle
+    if ([101, 150, 153].includes(event.data)) {
+        shuffle();
+    }
 }
 
     function onPlayerStateChange(event) {
