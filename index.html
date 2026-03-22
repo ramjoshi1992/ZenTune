@@ -2,257 +2,233 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>ZenTune Pro</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenTune Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0f172a;
-            --card-bg: #1e293b;
+            --bg: #0f172a;
+            --card: #1e293b;
             --accent: #38bdf8;
             --text: #f1f5f9;
         }
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
+            background-color: var(--bg);
             color: var(--text);
             margin: 0;
             display: flex;
-            flex-direction: column;
+            justify-content: center;
             align-items: center;
             min-height: 100vh;
         }
 
-        .container {
+        .dashboard {
             display: flex;
             gap: 20px;
-            padding: 20px;
             width: 95%;
             max-width: 1200px;
-            margin-top: 20px;
+            background: var(--card);
+            padding: 30px;
+            border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
         }
 
-        /* Stats Panel */
-        .insights-panel {
+        /* Sidebar - Insights */
+        .sidebar {
             flex: 1;
-            min-width: 280px;
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 16px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            height: fit-content;
-        }
-
-        .stat-card {
-            background: rgba(255,255,255,0.05);
-            padding: 15px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-
-        /* Main Player Area */
-        .aura-container {
-            flex: 2;
-            min-width: 320px;
-            text-align: center;
-        }
-
-        #player-wrapper {
-            position: relative;
-            width: 100%;
-            padding-top: 56.25%; 
-            background: #000;
-            border-radius: 16px;
-            overflow: hidden;
-            margin-bottom: 20px;
-            box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
-        }
-
-        #player {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        /* Controls */
-        .controls {
             display: flex;
             flex-direction: column;
             gap: 15px;
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 16px;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            padding-right: 20px;
+        }
+
+        .stat-box {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .stat-box h2 {
+            margin: 5px 0;
+            color: var(--accent);
+        }
+
+        /* Main Content - Player & Toggles */
+        .main-content {
+            flex: 3;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        #video-container {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #000;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
         input, select, button {
-            padding: 14px;
+            padding: 10px 15px;
             border-radius: 8px;
-            border: none;
-            font-size: 1rem;
-            outline: none;
-        }
-
-        input, select {
+            border: 1px solid rgba(255,255,255,0.1);
             background: #334155;
             color: white;
+            font-size: 0.95rem;
         }
 
         button {
             background: var(--accent);
-            color: #0f172a;
-            font-weight: 700;
+            color: var(--bg);
+            font-weight: 600;
+            border: none;
             cursor: pointer;
-            transition: all 0.2s;
-            position: relative;
-            z-index: 10;
         }
 
-        button:active { transform: scale(0.96); }
-
-        #status-text {
-            margin-top: 10px;
+        .toggle-group {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             font-size: 0.9rem;
-            color: #94a3b8;
         }
 
-        /* Responsive Fix (Stacks only on small phones) */
-        @media (max-width: 850px) {
-            .container { flex-direction: column; align-items: center; }
-            .insights-panel, .aura-container { width: 100%; }
+        #status {
+            font-size: 0.85rem;
+            color: #94a3b8;
+            margin-top: 5px;
         }
     </style>
 </head>
 <body>
 
-    <h1 style="margin-top: 30px; letter-spacing: -1px;">ZenTune <span style="color:var(--accent)">Pro</span></h1>
-
-    <div class="container">
-        <div class="insights-panel">
-            <h3>Personal Insights</h3>
-            <div class="stat-card">
-                <small>Total Focus Time</small>
-                <h2 id="total-time">0m</h2>
+    <div class="dashboard">
+        <div class="sidebar">
+            <h3 style="margin-top:0">Insights</h3>
+            <div class="stat-box">
+                <small>Total Minutes</small>
+                <h2 id="total-minutes">0</h2>
             </div>
-            <div class="stat-card">
-                <small>Core Frequency</small>
-                <h2 id="top-mood">None</h2>
+            <div class="stat-box">
+                <small>Top Mood</small>
+                <h2 id="top-mood" style="font-size: 1.1rem;">None</h2>
+            </div>
+            <div class="stat-box">
+                <small>Session Streak</small>
+                <h2 id="streak">0</h2>
             </div>
         </div>
 
-        <div class="aura-container">
-            <div id="player-wrapper">
+        <div class="main-content">
+            <div class="controls-row">
+                <input type="text" id="user-id" placeholder="Login (e.g. Ram)">
+                
+                <div class="toggle-group">
+                    <span>Mode:</span>
+                    <select id="mode-toggle">
+                        <option value="Standard">Standard</option>
+                        <option value="Deep">Deep Dive</option>
+                    </select>
+                </div>
+
+                <div class="toggle-group">
+                    <span>Focus Model:</span>
+                    <select id="focus-model">
+                        <option value="Alpha">Alpha Waves</option>
+                        <option value="Beta">Beta Concentration</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="video-container">
                 <div id="player"></div>
             </div>
 
-            <div class="controls">
-                <input type="text" id="user-id" placeholder="Enter User ID (e.g., Ram)">
-                
-                <select id="mood-select">
-                    <option value="Focus">Focus (Alpha Waves)</option>
-                    <option value="Anxiety Relief">Anxiety Relief</option>
-                    <option value="Energy Boost">Morning Energy</option>
-                    <option value="Creative Flow">Creative Flow</option>
+            <div class="controls-row">
+                <select id="mood-select" style="flex-grow: 1;">
+                    <optgroup label="Work & Study">
+                        <option value="Focus">Focus</option>
+                        <option value="Creative Flow">Creative Flow</option>
+                    </optgroup>
+                    <optgroup label="Relaxation">
+                        <option value="Anxiety Relief">Anxiety Relief</option>
+                        <option value="Deep Sleep Prep">Deep Sleep Prep</option>
+                    </optgroup>
                 </select>
-
-                <button id="calibrate-btn" onclick="calibrate()">Calibrate Aura</button>
-                <div id="status-text">Ready to sync...</div>
+                <button onclick="calibrate()">Calibrate Aura</button>
             </div>
+            <div id="status">Ready to sync session data.</div>
         </div>
     </div>
 
     <script src="https://www.youtube.com/iframe_api"></script>
     <script>
-        const API_BASE_URL = "https://zentune.onrender.com";
-        let ytPlayer;
+        const API_URL = "https://zentune.onrender.com";
+        let player;
 
         function onYouTubeIframeAPIReady() {
-            ytPlayer = new YT.Player('player', {
+            player = new YT.Player('player', {
                 height: '100%',
                 width: '100%',
                 playerVars: {
                     'autoplay': 1,
                     'controls': 1,
                     'enablejsapi': 1,
-                    // HARCODED ORIGIN - This fixed the Playback ID error for most
-                    'origin': 'https://ramjoshi1992.github.io', 
-                    'playsinline': 1,
-                    'modestbranding': 1
+                    // Minimal parameters to avoid Playback ID errors on desktop
                 },
                 events: {
-                    'onReady': onPlayerReady,
-                    'onError': onPlayerError
+                    'onReady': () => console.log("System Ready")
                 }
             });
         }
 
-        function onPlayerReady(event) {
-            // Mute on start prevents browser from blocking the stream
-            event.target.mute(); 
-            console.log("Player Initialized Muted");
-        }
-
         async function calibrate() {
-            const userId = document.getElementById('user-id').value;
+            const user = document.getElementById('user-id').value;
             const mood = document.getElementById('mood-select').value;
-            const statusText = document.getElementById('status-text');
-            const btn = document.getElementById('calibrate-btn');
+            const status = document.getElementById('status');
 
-            if (!userId) {
-                alert("Please enter a User ID first!");
-                return;
-            }
+            if (!user) return alert("Please login with your User ID");
 
-            // Important: Interaction handshake for mobile/desktop browsers
-            if (ytPlayer && ytPlayer.playVideo) {
-                ytPlayer.playVideo(); 
-                ytPlayer.mute(); 
-            }
-
-            statusText.innerText = "Connecting to Auras...";
-            btn.innerText = "Syncing...";
+            status.innerText = "Syncing with Render...";
 
             try {
-                const response = await fetch(`${API_BASE_URL}/identify`, {
+                const res = await fetch(`${API_URL}/identify`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId, mood: mood })
+                    body: JSON.stringify({ 
+                        user_id: user, 
+                        mood: mood,
+                        mode: document.getElementById('mode-toggle').value,
+                        model: document.getElementById('focus-model').value
+                    })
                 });
 
-                if (!response.ok) throw new Error("Server not responding");
+                const data = await res.json();
 
-                const data = await response.json();
-                
-                document.getElementById('total-time').innerText = (data.total_focus_time || 0) + "m";
+                // Restore session data updates
+                document.getElementById('total-minutes').innerText = data.total_focus_time || 0;
                 document.getElementById('top-mood').innerText = data.dominant_mood || mood;
-                
-                if (data.preview_url) {
-                    // Using loadVideoById with suggestedQuality is more stable
-                    ytPlayer.loadVideoById({
-                        videoId: data.preview_url,
-                        suggestedQuality: 'default'
-                    });
-                    
-                    // Delay unmuting by 1 second to ensure the stream is established
-                    setTimeout(() => { ytPlayer.unMute(); }, 1500);
-                    statusText.innerText = "Aura Synced!";
-                }
-            } catch (error) {
-                console.error("Fetch Error:", error);
-                statusText.innerText = "Server is waking up... Try again in 15s.";
-            } finally {
-                btn.innerText = "Calibrate Aura";
-            }
-        }
+                document.getElementById('streak').innerText = data.streak || 0;
 
-        function onPlayerError(event) {
-            console.warn("YouTube Error Code:", event.data);
-            // If restricted, automatically try another video
-            if ([101, 150, 153].includes(event.data)) {
-                calibrate(); 
+                if (data.preview_url) {
+                    player.loadVideoById(data.preview_url);
+                    status.innerText = "Aura Synced!";
+                }
+
+            } catch (err) {
+                status.innerText = "Connection error. Retrying...";
+                console.error(err);
             }
         }
     </script>
