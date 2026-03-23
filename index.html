@@ -374,7 +374,6 @@ function onPlayerError(event) {
                 document.getElementById('sessionControls').style.display='flex';
                 
                 resetSessionState();
-                runTimer();
             }
         } catch(e) { console.error("Calibration Error:", e); }
         btn.innerText = "Calibrate";
