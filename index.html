@@ -47,7 +47,7 @@
 
         .main-content { 
             position: absolute; top: 0; left: 0; right: 0; bottom: 0;
-            display: flex; justify-content: center; align-items: center; 
+            display: flex; justify(content: center; align-items: center; 
             transition: all 0.5s ease; 
         }
         
@@ -72,7 +72,14 @@
         .goal-adjuster { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
         .adj-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: var(--radius-md); cursor: pointer; font-size: 18px; font-weight: bold; }
         
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+
         input[type="number"] {
+            -moz-appearance: textfield;
             text-align: center; width: 100%; height: 40px; padding: 0 10px; margin: 6px 0; 
             border-radius: var(--radius-md); border: 1px solid var(--border); 
             background: var(--input-bg); color: var(--text); font-size: 14px; 
@@ -108,9 +115,29 @@
         input:checked + .slider:before { transform: translateX(20px); }
 
         #focBtn { background: #4a4a8a; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 700; }
+        
+        /* Guide Styles */
+        #guideModal { position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2000; display:none; justify-content:center; align-items:center; backdrop-filter: blur(5px); }
+        .guide-card { background:var(--card); padding:30px; border-radius:24px; max-width:400px; width:90%; border:1px solid var(--accent); text-align:center; color:var(--text); box-shadow: 0 0 30px var(--aura); }
+        .fab { position:fixed; bottom:20px; right:20px; width:50px; height:50px; background:var(--accent); color:white; border-radius:50%; display:none; justify-content:center; align-items:center; cursor:pointer; font-size:24px; font-weight:bold; z-index:1001; box-shadow: 0 4px 15px rgba(0,0,0,0.3); border: 2px solid rgba(255,255,255,0.2); }
     </style>
 </head>
 <body>
+
+    <div id="guideModal">
+        <div class="guide-card">
+            <h2 style="margin-top:0; color:var(--accent);">Welcome to ZenTune</h2>
+            <p style="font-size:14px; line-height:1.6;">Bio-adaptive audio to optimize your flow state.</p>
+            <ul style="font-size:13px; text-align:left; padding-left:20px; line-height:1.8;">
+                <li><strong>Login:</strong> Sync focus stats across sessions.</li>
+                <li><strong>Frequency:</strong> Choose a mood to shift the aura & audio.</li>
+                <li><strong>Calibrate:</strong> Build your custom AI focus playlist.</li>
+                <li><strong>Focus Mode:</strong> Strip the UI for deep immersion.</li>
+            </ul>
+            <button onclick="closeGuide()" style="width:100%; padding:12px; background:var(--accent); color:white; border:none; border-radius:12px; cursor:pointer; font-weight:bold; margin-top:15px;">Start Focus</button>
+        </div>
+    </div>
+    <div id="helpFab" class="fab" onclick="openGuide()">?</div>
 
     <nav class="top-nav">
         <div class="nav-group">
@@ -195,18 +222,17 @@
     </main>
 
 <script>
-    // 1. CONFIGURATION
     const API_BASE_URL = 'https://zentune.onrender.com';
     let ytPlayer, trackPool = [], poolIdx = 0, timerInterval = null, seconds = 0;
     let isPaused = false, goalReached = false, isFlowing = false;
-    let userId = localStorage.getItem('zentune_id');
+    
+    // Changed to sessionStorage for automatic logout on close
+    let userId = sessionStorage.getItem('zentune_id'); 
     let originalGoalMins = 25; 
 
-    // 2. DEFINE FUNCTIONS FIRST
+    // Define functions BEFORE window.onload
     function updateAura() {
-        const moodEl = document.getElementById('moodInput');
-        if (!moodEl) return;
-        const mood = moodEl.value;
+        const mood = document.getElementById('moodInput').value;
         const colors = { 
             focus: "rgba(16, 185, 129, 0.4)", happy: "rgba(245, 158, 11, 0.4)", kickstart: "rgba(249, 115, 22, 0.4)",
             anxious: "rgba(168, 85, 247, 0.4)", stressed: "rgba(20, 184, 166, 0.4)", heartbroken: "rgba(244, 114, 182, 0.4)",
@@ -215,16 +241,27 @@
         document.documentElement.style.setProperty('--aura', colors[mood] || "rgba(157, 150, 255, 0.3)");
     }
 
+    function openGuide() {
+        document.getElementById('guideModal').style.display = 'flex';
+        document.getElementById('helpFab').style.display = 'none';
+    }
+
+    function closeGuide() {
+        document.getElementById('guideModal').style.display = 'none';
+        document.getElementById('helpFab').style.display = 'flex';
+    }
+
     function showUser(id) { 
         document.getElementById('loginForm').style.display='none'; 
         document.getElementById('userGreeting').style.display='block'; 
         document.getElementById('userLabel').innerText = `Welcome, ${id}`; 
+        fetchStats(); 
     }
 
     async function fetchStats() {
         if(!userId) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/stats/${userId}?t=${Date.now()}`);
+            const res = await fetch(`${API_BASE_URL}/stats/${userId}`);
             const d = await res.json();
             document.getElementById('sTotal').innerText = d.total ?? 0; 
             document.getElementById('sTime').innerText = d.total_time ?? "0h 0m";
@@ -233,7 +270,54 @@
         } catch(e) { console.error("Stats Error:", e); }
     }
 
-    // 3. LOGIC FLOW FUNCTIONS
+    window.onload = () => { 
+        openGuide(); // Open dialog on every reload
+        if(userId) showUser(userId); 
+        updateAura(); 
+    };
+
+    function onYouTubeIframeAPIReady() {
+        ytPlayer = new YT.Player('player', {
+            height: '100%', width: '100%',
+            playerVars: { 'autoplay': 1, 'controls': 1, 'enablejsapi': 1, 'origin': window.location.origin },
+            events: { 'onStateChange': onPlayerStateChange, 'onError': onPlayerError }
+        });
+    }
+
+    function onPlayerError(event) {
+        if ([101, 150, 153].includes(event.data)) shuffle();
+    }
+
+    function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.PLAYING) {
+            isPaused = false; document.getElementById('playPauseBtn').innerText = "Pause"; runTimer();
+        } else if (event.data == YT.PlayerState.PAUSED) {
+            isPaused = true; document.getElementById('playPauseBtn').innerText = "Play"; clearInterval(timerInterval);
+        }
+    }
+
+    function togglePlayPause() {
+        if (!ytPlayer || !ytPlayer.pauseVideo) return;
+        if (isPaused) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
+    }
+
+    function adjustGoal(amount) {
+        const input = document.getElementById('timeGoal');
+        let val = parseInt(input.value) || 0;
+        val = Math.max(1, val + amount);
+        input.value = val;
+        originalGoalMins = val;
+        if (timerInterval) updateProgressBar();
+    }
+
+    function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
+    
+    function toggleFocus() { 
+        document.body.classList.toggle('focus-active'); 
+        const active = document.body.classList.contains('focus-active');
+        document.getElementById('focBtn').innerText = active ? "FOCUS MODE: ON" : "FOCUS MODE: OFF";
+    }
+
     async function login() {
         const id = document.getElementById('uidInput').value.trim();
         if(!id) return;
@@ -242,19 +326,17 @@
             const data = await res.json();
             if(data.status==='success') { 
                 userId = data.user_id; 
-                localStorage.setItem('zentune_id', userId); 
+                sessionStorage.setItem('zentune_id', userId); 
                 stopSession(); 
                 showUser(userId); 
-                fetchStats();
             }
         } catch(e) { console.error("Login Error:", e); }
     }
-
+    
     function logout() { 
-        if (seconds > 5 && !confirm("Logout and save session?")) return;
-        if (seconds > 5) saveSessionToDB();
+        if (seconds > 5 && !confirm("Save progress before logging out?")) return;
         userId = null;
-        localStorage.removeItem('zentune_id'); 
+        sessionStorage.removeItem('zentune_id'); 
         stopSession(); 
         resetSessionState();
         document.getElementById('loginForm').style.display='block'; 
@@ -286,10 +368,21 @@
                 document.getElementById('result').style.display='block';
                 document.getElementById('sessionControls').style.display='flex';
                 resetSessionState();
+                runTimer();
             }
         } catch(e) { console.error("Calibrate Error:", e); }
         btn.innerText = "Calibrate";
         btn.disabled = false;
+    }
+
+    function resetSessionState() {
+        clearInterval(timerInterval);
+        seconds = 0; goalReached = false; isFlowing = false; isPaused = false;
+        document.getElementById('continueBtn').style.display = 'none';
+        document.getElementById('mainCard').classList.remove('goal-reached');
+        document.getElementById('sessionTimer').innerText = `SESSION: 00:00`;
+        document.getElementById('goalBarFill').style.width = "0%";
+        document.getElementById('goalBarContainer').style.display = 'none';
     }
 
     function runTimer() {
@@ -306,16 +399,6 @@
             const goalMins = parseInt(document.getElementById('timeGoal').value);
             if (seconds >= (goalMins * 60) && !goalReached) handleGoalReached();
         }, 1000);
-    }
-
-    function resetSessionState() {
-        clearInterval(timerInterval);
-        seconds = 0; goalReached = false; isFlowing = false; isPaused = false;
-        document.getElementById('continueBtn').style.display = 'none';
-        document.getElementById('mainCard').classList.remove('goal-reached');
-        document.getElementById('sessionTimer').innerText = `SESSION: 00:00`;
-        document.getElementById('goalBarFill').style.width = "0%";
-        document.getElementById('goalBarContainer').style.display = 'none';
     }
 
     function updateProgressBar() {
@@ -349,6 +432,16 @@
         runTimer();
     }
 
+    function shuffle() { 
+        if(trackPool.length > 0) {
+            poolIdx=(poolIdx+1)%trackPool.length; 
+            let url = trackPool[poolIdx].preview_url;
+            let vidId = url.includes('/embed/') ? url.split('/embed/')[1] : url;
+            ytPlayer.loadVideoById(vidId);
+            document.getElementById('trackTitle').innerText = trackPool[poolIdx].title;
+        }
+    }
+
     function stopSession() {
         if (seconds > 5) saveSessionToDB(); 
         resetSessionState();
@@ -367,65 +460,6 @@
             fetchStats(); 
         } catch(e) { console.error("Save Error:", e); }
     }
-
-    function shuffle() { 
-        if(trackPool.length > 0) {
-            poolIdx=(poolIdx+1)%trackPool.length; 
-            let url = trackPool[poolIdx].preview_url;
-            let vidId = url.includes('/embed/') ? url.split('/embed/')[1] : url;
-            ytPlayer.loadVideoById(vidId);
-            document.getElementById('trackTitle').innerText = trackPool[poolIdx].title;
-        }
-    }
-
-    function togglePlayPause() {
-        if (!ytPlayer || !ytPlayer.pauseVideo) return;
-        if (isPaused) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
-    }
-
-    function onYouTubeIframeAPIReady() {
-        ytPlayer = new YT.Player('player', {
-            height: '100%', width: '100%',
-            playerVars: { 'autoplay': 1, 'controls': 1, 'enablejsapi': 1, 'origin': window.location.origin },
-            events: { 'onStateChange': onPlayerStateChange, 'onError': onPlayerError }
-        });
-    }
-
-    function onPlayerError(event) { if ([101, 150, 153].includes(event.data)) shuffle(); }
-
-    function onPlayerStateChange(event) {
-        if (event.data == YT.PlayerState.PLAYING) {
-            isPaused = false; document.getElementById('playPauseBtn').innerText = "Pause"; runTimer();
-        } else if (event.data == YT.PlayerState.PAUSED) {
-            isPaused = true; document.getElementById('playPauseBtn').innerText = "Play"; clearInterval(timerInterval);
-        }
-    }
-
-    function adjustGoal(amount) {
-        const input = document.getElementById('timeGoal');
-        let val = parseInt(input.value) || 0;
-        val = Math.max(1, val + amount);
-        input.value = val;
-        originalGoalMins = val;
-        if (timerInterval) updateProgressBar();
-    }
-
-    function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
-    
-    function toggleFocus() { 
-        document.body.classList.toggle('focus-active'); 
-        const active = document.body.classList.contains('focus-active');
-        document.getElementById('focBtn').innerText = active ? "FOCUS MODE: ON" : "FOCUS MODE: OFF";
-    }
-
-    // 4. THE ONLOAD TRIGGER (Must be last)
-    window.onload = () => { 
-        updateAura(); 
-        if(userId) {
-            showUser(userId);
-            fetchStats();
-        }
-    };
 </script>
 </body>
 </html>
