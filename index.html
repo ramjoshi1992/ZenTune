@@ -266,13 +266,29 @@
         if ([101, 150, 153].includes(event.data)) shuffle();
     }
 
-    function onPlayerStateChange(event) {
-        if (event.data == YT.PlayerState.PLAYING) {
-            isPaused = false; document.getElementById('playPauseBtn').innerText = "Pause"; runTimer();
-        } else if (event.data == YT.PlayerState.PAUSED) {
-            isPaused = true; document.getElementById('playPauseBtn').innerText = "Play"; clearInterval(timerInterval);
+function onPlayerStateChange(event) {
+    // Check if the player is playing AND it is not an advertisement
+    // Note: Some API versions use event.target.getAdState() if available
+    if (event.data == YT.PlayerState.PLAYING) {
+        
+        // We add a small check: if the duration is very short or 
+        // specific ad-indicators are present, we stay paused.
+        const isAd = ytPlayer.getVideoData().isLive === false && ytPlayer.getDuration() < 61 && ytPlayer.getVideoData().title === "";
+
+        if (!isAd) {
+            isPaused = false;
+            document.getElementById('playPauseBtn').innerText = "Pause";
+            runTimer();
+        } else {
+            console.log("Ad detected. Timer holding...");
         }
+        
+    } else if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.BUFFERING) {
+        isPaused = true;
+        document.getElementById('playPauseBtn').innerText = "Play";
+        clearInterval(timerInterval);
     }
+}
 
     // VOLUME FUNCTIONS
     function setVolume(val) {
