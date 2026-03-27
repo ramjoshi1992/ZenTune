@@ -13,7 +13,7 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, resources={r"/*": {"origins": "https://ramjoshi1992.github.io"}})
 
 # Pulls the 'Internal Database URL' from your Render Environment Variables
 DB_URL = os.getenv("DATABASE_URL")
