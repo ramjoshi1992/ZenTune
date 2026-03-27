@@ -20,6 +20,25 @@
 
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.5s ease; }
 
+        /* Welcome Message Styling */
+        #welcomeOverlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.85); z-index: 3000;
+            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px);
+        }
+        .welcome-card {
+            background: var(--card); padding: 40px; border-radius: 28px; text-align: center;
+            max-width: 400px; border: 1px solid var(--border); box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        /* Floating Help Button */
+        .help-btn {
+            position: fixed; bottom: 30px; right: 30px; width: 56px; height: 56px;
+            background: var(--accent); color: white; border-radius: 50%; border: none;
+            font-weight: bold; font-size: 24px; cursor: pointer; z-index: 2000;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3); transition: transform 0.2s;
+        }
+        .help-btn:hover { transform: scale(1.1); }
+
         .top-nav { position: fixed; top: 0; right: 0; left: 0; height: 100px; display: flex; justify-content: flex-end; align-items: center; padding: 25px 30px 0; gap: 30px; z-index: 1000; pointer-events: none; }
         .nav-group, .settings-column { pointer-events: auto; }
         .nav-group { display: flex; align-items: center; gap: 15px; margin-right: auto; }
@@ -56,7 +75,6 @@
         .control-btns { display: none; gap: 8px; margin-top: 12px; }
         .icon-btn { flex: 1; background: #4a4a8a; border: none; border-radius: var(--radius-md); color: white; padding: 10px; cursor: pointer; }
 
-        /* UI Fix: Ensure Skip Ad button is visible and video fits */
         .video-box { width: 100%; margin: 15px auto 0; aspect-ratio: 16 / 9; border-radius: var(--radius-md); overflow: hidden; display: none; background: #000; position: relative; }
         #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
@@ -74,6 +92,16 @@
     </style>
 </head>
 <body data-theme="dark">
+
+    <div id="welcomeOverlay">
+        <div class="welcome-card">
+            <h2 style="margin-top:0;">Welcome to ZenTune</h2>
+            <p>Ready to find your focus frequency? Log in with your User ID to begin your session.</p>
+            <button onclick="document.getElementById('welcomeOverlay').style.display='none'" class="cal-btn">Get Started</button>
+        </div>
+    </div>
+
+    <button class="help-btn" onclick="alert('ZenTune Help: \n1. Enter User ID\n2. Select Mood\n3. Click Calibrate\n4. Enjoy Frequency Therapy')">?</button>
 
     <nav class="top-nav">
         <div class="nav-group">
@@ -163,6 +191,22 @@
     let userId = sessionStorage.getItem('zentune_id'); 
     let userVolSetting = 100;
 
+    function login() {
+        const val = document.getElementById('uidInput').value;
+        if(val) {
+            userId = val;
+            sessionStorage.setItem('zentune_id', userId);
+            document.getElementById('loginForm').style.display='none';
+            document.getElementById('userGreeting').style.display='block';
+            document.getElementById('userLabel').innerText = `ID: ${userId}`;
+        }
+    }
+
+    function logout() {
+        sessionStorage.removeItem('zentune_id');
+        location.reload();
+    }
+
     function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
     function toggleInsights() {
         document.body.classList.toggle('show-stats');
@@ -178,24 +222,20 @@
 
     function onPlayerStateChange(event) {
         const videoData = ytPlayer.getVideoData();
-        // Tightened Ad Detection
         const isAd = ytPlayer.getDuration() > 0 && ytPlayer.getDuration() < 65 && (videoData.title === "" || videoData.author === "");
 
         if (event.data == YT.PlayerState.PLAYING) {
             if (isAd) {
-                // Ad is playing: Mute and halt timer
                 ytPlayer.setVolume(0); 
                 clearInterval(timerInterval);
                 document.getElementById('playPauseBtn').innerText = "Ad Playing...";
             } else {
-                // Content is playing: Restore volume and timer
                 ytPlayer.setVolume(userVolSetting);
                 isPaused = false;
                 document.getElementById('playPauseBtn').innerText = "Pause";
                 runTimer();
             }
         } else {
-            // Buffering, Paused, or Ended: Stop timer
             clearInterval(timerInterval);
         }
     }
@@ -270,6 +310,15 @@
         const colors = { focus: "#10b981", happy: "#f59e0b", heartbroken: "#f472b6", sleepy: "#1e3a8a", anxious: "#a855f7" };
         document.documentElement.style.setProperty('--aura', colors[mood] || "#6c63ff");
     }
+
+    // Auto-login check on load
+    window.onload = () => {
+        if(userId) {
+            document.getElementById('loginForm').style.display='none';
+            document.getElementById('userGreeting').style.display='block';
+            document.getElementById('userLabel').innerText = `ID: ${userId}`;
+        }
+    };
 </script>
 </body>
 </html>
