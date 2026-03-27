@@ -11,7 +11,7 @@
             --bg: #cfd8dc; --card: #b2beb5; --sidebar: #f0f2f5; --text: #37474f;       
             --accent: #6c63ff; --border: rgba(0,0,0,0.15); --input-bg: #e1e8eb;
             --aura: rgba(108, 99, 255, 0.3);
-            --pulse-speed: 4s; --radius-lg: 18px; --radius-md: 12px; --sidebar-width: 260px;
+            --radius-lg: 18px; --radius-md: 12px;
         }
         [data-theme="dark"] { 
             --bg: #0b0e14; --card: #161b22; --text: #efefff; --accent: #9d96ff; 
@@ -20,7 +20,7 @@
 
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.5s ease; }
 
-        /* Welcome Box Overlay */
+        /* Welcome Box Overlay - Updated for immediate entry */
         #welcomeBox {
             position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
             display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px);
@@ -35,17 +35,7 @@
         .nav-group, .settings-column { pointer-events: auto; }
         .nav-group { display: flex; align-items: center; gap: 15px; margin-right: auto; }
         
-        #uidInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 120px; }
-        .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; }
-
-        /* Insights Panel */
-        .stats-panel { 
-            position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-width); 
-            background: var(--sidebar); border-right: 1px solid var(--border); 
-            padding: 110px 20px 20px; display: flex; flex-direction: column; gap: 12px; 
-            transition: transform 0.5s ease; z-index: 900; transform: translateX(-100%);
-        }
-        body.show-stats .stats-panel { transform: translateX(0); }
+        .login-btn { padding: 10px 24px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; font-size: 15px; }
 
         /* Floating Help Button */
         .help-btn {
@@ -86,18 +76,15 @@
         .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.4s; }
         input:checked + .slider { background: var(--accent); }
         input:checked + .slider:before { transform: translateX(20px); }
-
-        #focBtn { background: #4a4a8a; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 700; pointer-events: auto; }
     </style>
 </head>
 <body data-theme="dark">
 
     <div id="welcomeBox">
         <div class="welcome-card">
-            <h2>Welcome to ZenTune</h2>
-            <p>Enter your User ID to begin your session.</p>
-            <input type="text" id="welcomeUid" placeholder="Enter User ID" style="padding: 10px; margin-bottom: 15px;">
-            <button onclick="login(true)" class="login-btn" style="width:100%">Start Session</button>
+            <h1 style="margin-top:0;">ZenTune</h1>
+            <p>Welcome. Personalized frequency therapy is ready for you.</p>
+            <button onclick="enterApp()" class="login-btn" style="width:100%">Start Session</button>
         </div>
     </div>
 
@@ -108,7 +95,7 @@
             <ul style="text-align:left; font-size: 14px; line-height: 1.6;">
                 <li><b>Calibrate:</b> Finds the best frequency for your mood.</li>
                 <li><b>Time Goal:</b> Sets session length.</li>
-                <li><b>Insights:</b> View your session history.</li>
+                <li><b>Flow Safeguard:</b> Protects focus state.</li>
             </ul>
             <button onclick="toggleHelp()" class="cal-btn">Close</button>
         </div>
@@ -116,9 +103,8 @@
 
     <nav class="top-nav">
         <div class="nav-group">
-            <div id="userGreeting" style="display:none; font-size: 13px; font-weight:bold;">
+            <div id="userGreeting" style="display:none; font-size: 11px; font-weight:bold; opacity:0.6;">
                 <span id="userLabel"></span> 
-                <span onclick="logout()" style="color:#ff4d4d; cursor:pointer; margin-left:10px; font-size:10px; text-decoration:underline;">LOGOUT</span>
             </div>
         </div>
 
@@ -131,15 +117,8 @@
                 Dark Mode
                 <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
             </div>
-            <button onclick="toggleInsights()" id="focBtn">SHOW INSIGHTS</button>
         </div>
     </nav>
-
-    <aside class="stats-panel" id="statsPanel">
-        <h3 style="margin-top:0; font-size:16px;">Insights</h3>
-        <div id="sTotal" style="font-size:14px; margin-bottom:10px;">Sessions: 0</div>
-        <div id="sTime" style="font-size:14px;">Total Focus: 0h 0m</div>
-    </aside>
 
     <main class="main-content">
         <div class="card" id="mainCard">
@@ -148,18 +127,28 @@
             
             <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">FREQUENCY</div>
             <select id="moodInput" onchange="updateAura()">
-                <option value="focus">Focus & Concentration</option>
-                <option value="happy">Pure Joy / Upbeat</option>
-                <option value="anxious">Relieve Anxiety</option>
-                <option value="stressed">De-stress & Meditate</option>
-                <option value="sleepy">Deep Sleep Prep</option>
+                <optgroup label="Productivity">
+                    <option value="focus">Focus & Concentration</option>
+                    <option value="kickstart">Morning Kickstart</option>
+                    <option value="unmotivated">Energy Boost</option>
+                </optgroup>
+                <optgroup label="Emotional Balance">
+                    <option value="happy">Pure Joy / Upbeat</option>
+                    <option value="anxious">Relieve Anxiety</option>
+                    <option value="heartbroken">Emotional Healing</option>
+                    <option value="socially-drained">Social Recharge</option>
+                </optgroup>
+                <optgroup label="Rest">
+                    <option value="stressed">De-stress & Meditate</option>
+                    <option value="sleepy">Deep Sleep Prep</option>
+                </optgroup>
             </select>
 
             <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">TIME GOAL (MIN)</div>
             <div style="display:flex; align-items:center; gap:8px; margin:6px 0;">
-                <button onclick="adjGoal(-1)" class="login-btn" style="background:var(--input-bg); color:var(--text);">-</button>
+                <button onclick="adjGoal(-1)" class="login-btn" style="background:var(--input-bg); color:var(--text); padding: 5px 15px;">-</button>
                 <input type="number" id="timeGoal" value="25">
-                <button onclick="adjGoal(1)" class="login-btn" style="background:var(--input-bg); color:var(--text);">+</button>
+                <button onclick="adjGoal(1)" class="login-btn" style="background:var(--input-bg); color:var(--text); padding: 5px 15px;">+</button>
             </div>
 
             <button class="cal-btn" onclick="calibrate()" id="calBtn">Calibrate</button>
@@ -179,45 +168,28 @@
     let ytPlayer, timerInterval, seconds = 0, trackPool = [], poolIdx = 0, isPaused = false;
     let userId = localStorage.getItem('zentune_id');
 
-    window.onload = () => { if(userId) { login(false, userId); } }
-
-    function login(isNew, manualId) {
-        userId = manualId || document.getElementById('welcomeUid').value;
-        if(!userId) return;
-        localStorage.setItem('zentune_id', userId);
-        document.getElementById('welcomeBox').style.display = 'none';
-        document.getElementById('userGreeting').style.display = 'block';
-        document.getElementById('userLabel').innerText = `USER: ${userId}`;
-        fetchStats();
+    // Auto-login or set guest ID
+    window.onload = () => { 
+        if(userId) { 
+            enterApp(); 
+        } 
     }
 
-    function logout() {
-        localStorage.removeItem('zentune_id');
-        location.reload();
+    function enterApp() {
+        if(!userId) {
+            userId = 'guest_' + Math.random().toString(36).substr(2, 9);
+            localStorage.setItem('zentune_id', userId);
+        }
+        document.getElementById('welcomeBox').style.display = 'none';
+        document.getElementById('userGreeting').style.display = 'block';
+        document.getElementById('userLabel').innerText = `SESSION ACTIVE`;
     }
 
     function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
     
-    function toggleInsights() {
-        document.body.classList.toggle('show-stats');
-        document.getElementById('focBtn').innerText = document.body.classList.contains('show-stats') ? "HIDE INSIGHTS" : "SHOW INSIGHTS";
-    }
-
     function toggleHelp() { 
         const m = document.getElementById('helpModal');
         m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
-    }
-
-    async function fetchStats() {
-        if(!userId) return;
-        try {
-            const res = await fetch(`${API_BASE_URL}/stats?user_id=${userId}`);
-            const data = await res.json();
-            document.getElementById('sTotal').innerText = `Sessions: ${data.total_sessions || 0}`;
-            const hrs = Math.floor((data.total_duration || 0) / 3600);
-            const mins = Math.floor(((data.total_duration || 0) % 3600) / 60);
-            document.getElementById('sTime').innerText = `Total Focus: ${hrs}h ${mins}m`;
-        } catch(e) { console.error("Stats Error:", e); }
     }
 
     function onYouTubeIframeAPIReady() {
@@ -228,10 +200,20 @@
     }
 
     function onPlayerStateChange(event) {
+        const videoData = ytPlayer.getVideoData();
+        const isAd = ytPlayer.getDuration() > 0 && ytPlayer.getDuration() < 65 && (videoData.title === "" || videoData.author === "");
+
         if (event.data == YT.PlayerState.PLAYING) {
-            isPaused = false;
-            document.getElementById('playPauseBtn').innerText = "Pause";
-            runTimer();
+            if (isAd) {
+                ytPlayer.setVolume(0); 
+                clearInterval(timerInterval);
+                document.getElementById('playPauseBtn').innerText = "Ad Playing...";
+            } else {
+                ytPlayer.setVolume(100);
+                isPaused = false;
+                document.getElementById('playPauseBtn').innerText = "Pause";
+                runTimer();
+            }
         } else {
             clearInterval(timerInterval);
         }
@@ -284,12 +266,11 @@
         document.getElementById('result').style.display = 'none';
         document.getElementById('sessionControls').style.display = 'none';
         document.getElementById('sessionTimer').innerText = "00:00";
-        // Logic to save session to DB can be added here
     }
 
     function updateAura() {
         const mood = document.getElementById('moodInput').value;
-        const colors = { focus: "#10b981", happy: "#f59e0b", anxious: "#a855f7", stressed: "#6c63ff", sleepy: "#1e3a8a" };
+        const colors = { focus: "#10b981", happy: "#f59e0b", heartbroken: "#f472b6", sleepy: "#1e3a8a", anxious: "#a855f7" };
         document.documentElement.style.setProperty('--aura', colors[mood] || "#6c63ff");
     }
 </script>
