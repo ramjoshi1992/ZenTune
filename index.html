@@ -3,8 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-    <meta http-equiv="Pragma" content="no-cache">
-    <meta http-equiv="Expires" content="0">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZenTune Pro | Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -39,9 +37,6 @@
             transition: transform 0.5s ease; z-index: 900; transform: translateX(-100%);
         }
         body.show-stats .stats-panel { transform: translateX(0); }
-
-        .stat-card { background: var(--card); padding: 15px; border-radius: var(--radius-lg); border: 1px solid var(--border); }
-        .stat-val { font-size: 15px; font-weight: 700; color: var(--accent); }
 
         .main-content { flex: 1; display: flex; justify-content: center; align-items: center; }
         
@@ -108,9 +103,8 @@
 
     <aside class="stats-panel" id="statsPanel">
         <h3 style="margin-top:0; font-size:16px;">Insights</h3>
-        <div class="stat-card"><div class="stat-val" id="sTotal">0</div><div style="font-size:9px; opacity:0.6;">SESSIONS</div></div>
-        <div class="stat-card"><div class="stat-val" id="sTime">0h 0m</div><div style="font-size:9px; opacity:0.6;">TOTAL TIME</div></div>
-        <div class="stat-card"><div class="stat-val" id="sMood">Initial Scan</div><div style="font-size:9px; opacity:0.6;">CORE FREQ</div></div>
+        <div id="sTotal" style="font-size:14px; margin-bottom:10px;">Sessions: 0</div>
+        <div id="sTime" style="font-size:14px;">Total Focus: 0h 0m</div>
     </aside>
 
     <main class="main-content">
@@ -118,7 +112,7 @@
             <h1 style="margin: 0 0 5px 0; font-size: 22px;">ZenTune</h1>
             <div class="timer" id="sessionTimer">00:00</div>
             
-            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px;">FREQUENCY</div>
+            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">FREQUENCY</div>
             <select id="moodInput" onchange="updateAura()">
                 <optgroup label="Productivity">
                     <option value="focus">Focus & Concentration</option>
@@ -137,14 +131,14 @@
                 </optgroup>
             </select>
 
-            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px;">TIME GOAL</div>
+            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">TIME GOAL</div>
             <div class="goal-adjuster">
                 <button class="adj-btn" onclick="adjustGoal(-1)">-</button>
                 <input type="number" id="timeGoal" value="25">
                 <button class="adj-btn" onclick="adjustGoal(1)">+</button>
             </div>
 
-            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px;">VOLUME</div>
+            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">VOLUME</div>
             <div class="volume-adjuster">
                 <button class="adj-btn" onclick="adjustVolume(-10)">-</button>
                 <input type="range" id="volSlider" min="0" max="100" value="100" style="flex:1;" oninput="setVolume(this.value)">
@@ -182,10 +176,11 @@
 
     function onPlayerStateChange(event) {
         const videoData = ytPlayer.getVideoData();
-        const isAd = ytPlayer.getDuration() < 61 && videoData.title === "";
+        // Robust Ad Detection: Short duration OR generic title OR "Ad" markers
+        const isAd = ytPlayer.getDuration() > 0 && ytPlayer.getDuration() < 61 && (videoData.title === "" || videoData.author === "");
+
         if (event.data == YT.PlayerState.PLAYING) {
             if (isAd) {
-                userVolSetting = document.getElementById('volSlider').value;
                 ytPlayer.setVolume(0); 
                 clearInterval(timerInterval);
                 document.getElementById('playPauseBtn').innerText = "Ad Playing...";
@@ -195,7 +190,7 @@
                 document.getElementById('playPauseBtn').innerText = "Pause";
                 runTimer();
             }
-        } else if (event.data == YT.PlayerState.PAUSED) {
+        } else {
             clearInterval(timerInterval);
         }
     }
@@ -205,7 +200,9 @@
         timerInterval = setInterval(() => {
             if (isPaused) return;
             seconds++;
-            document.getElementById('sessionTimer').innerText = `${Math.floor(seconds/60).toString().padStart(2,'0')}:${(seconds%60).toString().padStart(2,'0')}`;
+            const m = Math.floor(seconds/60).toString().padStart(2,'0');
+            const s = (seconds%60).toString().padStart(2,'0');
+            document.getElementById('sessionTimer').innerText = `${m}:${s}`;
         }, 1000);
     }
 
@@ -219,7 +216,7 @@
                 body:JSON.stringify({mood:mood, user_id: userId || "guest"})
             });
             const data = await res.json();
-            if(data.status==='success' && data.tracks.length > 0) { 
+            if(data.status==='success' && data.tracks && data.tracks.length > 0) { 
                 trackPool=data.tracks; poolIdx=0; 
                 const url = trackPool[0].preview_url;
                 const vidId = url.includes('embed/') ? url.split('embed/')[1] : url;
@@ -227,19 +224,27 @@
                 document.getElementById('trackTitle').innerText = trackPool[0].title;
                 document.getElementById('result').style.display='block';
                 document.getElementById('sessionControls').style.display='flex';
-                seconds = 0; runTimer();
+                seconds = 0;
             }
-        } catch(e) { console.error(e); }
+        } catch(e) { console.error("Calibrate error:", e); }
         btn.innerText = "Calibrate"; btn.disabled = false;
     }
 
     function setVolume(val) { userVolSetting = val; if(ytPlayer?.setVolume) ytPlayer.setVolume(val); }
     function adjustVolume(v) { let n = Math.min(Math.max(parseInt(userVolSetting)+v, 0), 100); document.getElementById('volSlider').value = n; setVolume(n); }
     function adjustGoal(v) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value)+v); }
-    function togglePlayPause() { if(isPaused) ytPlayer.playVideo(); else ytPlayer.pauseVideo(); isPaused = !isPaused; }
+    function togglePlayPause() { 
+        if(ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+            ytPlayer.pauseVideo(); isPaused = true;
+        } else {
+            ytPlayer.playVideo(); isPaused = false;
+        }
+    }
     function shuffle() { 
+        if(!trackPool.length) return;
         poolIdx = (poolIdx + 1) % trackPool.length;
-        const vidId = trackPool[poolIdx].preview_url.split('embed/')[1] || trackPool[poolIdx].preview_url;
+        const url = trackPool[poolIdx].preview_url;
+        const vidId = url.includes('embed/') ? url.split('embed/')[1] : url;
         ytPlayer.loadVideoById(vidId);
         document.getElementById('trackTitle').innerText = trackPool[poolIdx].title;
     }
@@ -248,6 +253,12 @@
         if(ytPlayer?.stopVideo) ytPlayer.stopVideo();
         document.getElementById('result').style.display = 'none';
         document.getElementById('sessionControls').style.display = 'none';
+        document.getElementById('sessionTimer').innerText = "00:00";
+    }
+    function updateAura() {
+        const mood = document.getElementById('moodInput').value;
+        const colors = { focus: "#10b981", happy: "#f59e0b", heartbroken: "#f472b6", sleepy: "#1e3a8a", anxious: "#a855f7" };
+        document.documentElement.style.setProperty('--aura', colors[mood] || "#6c63ff");
     }
 </script>
 </body>
