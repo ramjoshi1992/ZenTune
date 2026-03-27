@@ -27,13 +27,11 @@
         .top-nav { position: fixed; top: 0; right: 0; left: 0; height: auto; display: flex; justify-content: flex-end; align-items: flex-start; padding: 20px 30px; gap: 30px; z-index: 1000; pointer-events: none; }
         .nav-group, .settings-column { pointer-events: auto; }
         
-        /* Stacks Login and Button vertically */
         .nav-group { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-right: auto; }
         
         #uidInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 120px; }
         .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; transition: 0.3s; }
 
-        /* Increased top padding to push stats down below the nav */
         .stats-panel { 
             position: fixed; left: 0; top: 0; bottom: 0;
             width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); 
@@ -67,9 +65,10 @@
         .timer { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 5px; letter-spacing: 1px; }
         .adj-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: var(--radius-md); cursor: pointer; font-size: 18px; font-weight: bold; }
         
-        input[type="number"] { text-align: center; width: 100%; height: 40px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-weight: bold; outline: none; }
+        /* FIXED: HIDE NUMBER ARROWS */
+        input[type="number"] { text-align: center; width: 100%; height: 40px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-weight: bold; outline: none; -moz-appearance: textfield; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         
-        /* FIXED DROP DOWN CSS */
         select { 
             width: 100%; height: 44px; padding: 0 15px; margin: 8px 0; 
             border-radius: var(--radius-md); border: 1px solid var(--border); 
@@ -96,6 +95,10 @@
 
         #insightToggleBtn { background: #4a4a8a; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 9px; font-weight: 700; height: 32px; transition: 0.3s; width: 120px; }
         
+        /* FLOATING HELP BUTTON */
+        .help-fab { position: fixed; bottom: 25px; right: 25px; width: 45px; height: 45px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 2000; transition: 0.3s; }
+        .help-fab:hover { transform: scale(1.1); }
+
         #guideOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 5000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .guide-box { background: var(--card); padding: 30px; border-radius: 24px; max-width: 380px; width: 90%; text-align: center; border: 1px solid var(--accent); }
     </style>
@@ -109,6 +112,8 @@
             <button onclick="closeGuide()" class="cal-btn">Get Started</button>
         </div>
     </div>
+
+    <div class="help-fab" onclick="openGuide()">?</div>
 
     <nav class="top-nav">
         <div class="nav-group">
