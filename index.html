@@ -1,275 +1,296 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ZenTune Pro | Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
-    <script src="https://www.youtube.com/iframe_api"></script>
-    <style>
-        :root { 
-            --bg: #cfd8dc; --card: #b2beb5; --sidebar: #f0f2f5; --text: #37474f;       
-            --accent: #6c63ff; --border: rgba(0,0,0,0.15); --input-bg: #e1e8eb;
-            --aura: rgba(108, 99, 255, 0.3);
-            --pulse-speed: 4s; --radius-lg: 18px; --radius-md: 12px; --sidebar-width: 260px;
-        }
-        [data-theme="dark"] { 
-            --bg: #0b0e14; --card: #161b22; --text: #efefff; --accent: #9d96ff; 
-            --sidebar: #0d1117; --border: rgba(255,255,255,0.1); --input-bg: #0d1117;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenTune Pro | Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+        :root { 
+            --bg: #cfd8dc; --card: #b2beb5; --sidebar: #f0f2f5; --text: #37474f;       
+            --accent: #6c63ff; --border: rgba(0,0,0,0.15); --input-bg: #e1e8eb;
+            --aura: rgba(108, 99, 255, 0.3);
+            --radius-lg: 18px; --radius-md: 12px;
+        }
+        [data-theme="dark"] { 
+            --bg: #0b0e14; --card: #161b22; --text: #efefff; --accent: #9d96ff; 
+            --sidebar: #0d1117; --border: rgba(255,255,255,0.1); --input-bg: #0d1117;
+        }
 
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.5s ease; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.5s ease; }
 
-        .top-nav { position: fixed; top: 0; right: 0; left: 0; height: 100px; display: flex; justify-content: flex-end; align-items: center; padding: 25px 30px 0; gap: 30px; z-index: 1000; pointer-events: none; }
-        .nav-group, .settings-column { pointer-events: auto; }
-        .nav-group { display: flex; align-items: center; gap: 15px; margin-right: auto; }
-        
-        #uidInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 120px; }
-        .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; }
+        /* Welcome Box Overlay */
+        #welcomeBox {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
+            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .welcome-card {
+            background: var(--card); padding: 40px; border-radius: 24px; text-align: center;
+            max-width: 400px; border: 1px solid var(--border); color: var(--text);
+        }
 
-        .stats-panel { 
-            position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-width); 
-            background: var(--sidebar); border-right: 1px solid var(--border); 
-            padding: 110px 20px 20px; display: flex; flex-direction: column; gap: 12px; 
-            transition: transform 0.5s ease; z-index: 900; transform: translateX(-100%);
-        }
-        body.show-stats .stats-panel { transform: translateX(0); }
+        /* Nav & Controls */
+        .top-nav { position: fixed; top: 0; right: 0; left: 0; height: 100px; display: flex; justify-content: flex-end; align-items: center; padding: 25px 30px 0; gap: 30px; z-index: 1000; pointer-events: none; }
+        .nav-group, .settings-column { pointer-events: auto; }
+        .nav-group { display: flex; align-items: center; gap: 15px; margin-right: auto; }
+        
+        #uidInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 120px; }
+        .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; }
 
-        .main-content { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; }
-        
-        .card { 
-            background: var(--card); padding: 25px 30px; border-radius: 24px; 
-            width: 100%; max-width: 340px; text-align: center; border: 1px solid var(--border);
-            box-shadow: 0 0 50px var(--aura); animation: pulseAura var(--pulse-speed) infinite alternate ease-in-out;
-            display: flex; flex-direction: column;
-        }
+        /* Help Button */
+        .help-btn {
+            position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px;
+            background: var(--accent); color: white; border-radius: 50%; border: none;
+            font-weight: bold; font-size: 20px; cursor: pointer; z-index: 1500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
 
-        @keyframes pulseAura { 0% { box-shadow: 0 0 20px var(--aura); } 100% { box-shadow: 0 0 70px var(--aura); } }
-        
-        .timer { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 5px; }
-        .adj-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: var(--radius-md); cursor: pointer; font-weight: bold; }
-        
-        input[type="number"] { text-align: center; width: 100%; height: 40px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-weight: bold; outline: none; }
-        select { width: 100%; height: 44px; padding: 0 15px; margin: 8px 0; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; cursor: pointer; }
+        #helpModal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
+            z-index: 2100; align-items: center; justify-content: center;
+        }
+        .modal-content { background: var(--card); padding: 30px; border-radius: 18px; width: 90%; max-width: 400px; position: relative; }
 
-        .cal-btn { width: 100%; height: 44px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; margin-top: 10px; }
-        .control-btns { display: none; gap: 8px; margin-top: 12px; }
-        .icon-btn { flex: 1; background: #4a4a8a; border: none; border-radius: var(--radius-md); color: white; padding: 10px; cursor: pointer; }
+        .main-content { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .card { 
+            background: var(--card); padding: 25px 30px; border-radius: 24px; 
+            width: 100%; max-width: 340px; text-align: center; border: 1px solid var(--border);
+            box-shadow: 0 0 50px var(--aura); transition: box-shadow 0.5s ease;
+        }
 
-        /* UI Fix: Ensure Skip Ad button is visible and video fits */
-        .video-box { width: 100%; margin: 15px auto 0; aspect-ratio: 16 / 9; border-radius: var(--radius-md); overflow: hidden; display: none; background: #000; position: relative; }
-        #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
-        
-        .settings-column { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
-        .theme-container { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-        
-        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
-        .switch input { opacity: 0; width: 0; height: 0; }
-        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #999; border-radius: 20px; transition: 0.4s; }
-        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.4s; }
-        input:checked + .slider { background: var(--accent); }
-        input:checked + .slider:before { transform: translateX(20px); }
+        .timer { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 5px; }
+        input, select { width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; }
+        select { height: 44px; padding: 0 10px; margin: 8px 0; }
+        input[type="number"] { height: 40px; text-align: center; font-weight: bold; }
 
-        #focBtn { background: #4a4a8a; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 700; }
-    </style>
+        .cal-btn { width: 100%; height: 44px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .cal-btn:disabled { opacity: 0.6; cursor: wait; }
+
+        /* Loading Status Styling */
+        #loadStatus { font-size: 11px; font-weight: 600; color: var(--accent); margin-top: 10px; height: 14px; display: block; }
+
+        .video-box { width: 100%; margin: 15px auto 0; aspect-ratio: 16/9; border-radius: var(--radius-md); overflow: hidden; display: none; background: #000; position: relative; }
+        #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        .settings-column { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+        .theme-container { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background: #999; border-radius: 20px; transition: 0.4s; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.4s; }
+        input:checked + .slider { background: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+    </style>
 </head>
 <body data-theme="dark">
 
-    <nav class="top-nav">
-        <div class="nav-group">
-            <div id="loginForm">
-                <input type="text" id="uidInput" placeholder="User ID">
-                <button onclick="login()" class="login-btn">Login</button>
-            </div>
-            <div id="userGreeting" style="display:none; font-size: 13px; font-weight:bold;">
-                <span id="userLabel"></span> 
-                <span onclick="logout()" style="color:#ff4d4d; cursor:pointer; margin-left:10px; font-size:10px; text-decoration:underline;">LOGOUT</span>
-            </div>
-        </div>
+    <div id="welcomeBox">
+        <div class="welcome-card">
+            <h2>Welcome to ZenTune</h2>
+            <p>Personalized frequency therapy is initializing. Enter your ID.</p>
+            <input type="text" id="welcomeUid" placeholder="Enter User ID" style="padding: 10px; margin-bottom: 15px;">
+            <button onclick="login(true)" class="login-btn" style="width:100%">Start Session</button>
+        </div>
+    </div>
 
-        <div class="settings-column">
-            <div class="theme-container">
-                Flow Safeguard
-                <label class="switch"><input type="checkbox" id="flowTog" checked><span class="slider"></span></label>
-            </div>
-            <div class="theme-container">
-                Dark Mode
-                <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
-            </div>
-            <button onclick="toggleInsights()" id="focBtn">SHOW INSIGHTS</button>
-        </div>
-    </nav>
+    <button class="help-btn" onclick="toggleHelp()">?</button>
+    <div id="helpModal" onclick="toggleHelp()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Quick Help</h3>
+            <ul style="text-align:left; font-size: 14px; line-height: 1.6;">
+                <li><b>Wait for Load:</b> First calibration may take a few seconds to connect to the player.</li>
+                <li><b>Calibrate:</b> Finds the frequency matching your current need.</li>
+                <li><b>Flow Safeguard:</b> Maintains state across sessions.</li>
+            </ul>
+            <button onclick="toggleHelp()" class="cal-btn">Close</button>
+        </div>
+    </div>
 
-    <aside class="stats-panel" id="statsPanel">
-        <h3 style="margin-top:0; font-size:16px;">Insights</h3>
-        <div id="sTotal" style="font-size:14px; margin-bottom:10px;">Sessions: 0</div>
-        <div id="sTime" style="font-size:14px;">Total Focus: 0h 0m</div>
-    </aside>
+    <nav class="top-nav">
+        <div class="nav-group">
+            <div id="userGreeting" style="display:none; font-size: 13px; font-weight:bold;">
+                <span id="userLabel"></span> 
+                <span onclick="logout()" style="color:#ff4d4d; cursor:pointer; margin-left:10px; font-size:10px; text-decoration:underline;">LOGOUT</span>
+            </div>
+        </div>
+        <div class="settings-column">
+            <div class="theme-container">
+                Flow Safeguard
+                <label class="switch"><input type="checkbox" id="flowTog" checked><span class="slider"></span></label>
+            </div>
+            <div class="theme-container">
+                Dark Mode
+                <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
+            </div>
+        </div>
+    </nav>
 
-    <main class="main-content">
-        <div class="card" id="mainCard">
-            <h1 style="margin: 0 0 5px 0; font-size: 22px;">ZenTune</h1>
-            <div class="timer" id="sessionTimer">00:00</div>
-            
-            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">FREQUENCY</div>
-            <select id="moodInput" onchange="updateAura()">
-                <optgroup label="Productivity">
-                    <option value="focus">Focus & Concentration</option>
-                    <option value="kickstart">Morning Kickstart</option>
-                    <option value="unmotivated">Energy Boost</option>
-                </optgroup>
-                <optgroup label="Emotional Balance">
-                    <option value="happy">Pure Joy / Upbeat</option>
-                    <option value="anxious">Relieve Anxiety</option>
-                    <option value="heartbroken">Emotional Healing</option>
-                    <option value="socially-drained">Social Recharge</option>
-                </optgroup>
-                <optgroup label="Rest">
-                    <option value="stressed">De-stress & Meditate</option>
-                    <option value="sleepy">Deep Sleep Prep</option>
-                </optgroup>
-            </select>
+    <main class="main-content">
+        <div class="card" id="mainCard">
+            <h1 style="margin: 0 0 5px 0; font-size: 22px;">ZenTune</h1>
+            <div class="timer" id="sessionTimer">00:00</div>
+            
+            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">FREQUENCY</div>
+            <select id="moodInput" onchange="updateAura()">
+                <optgroup label="Productivity">
+                    <option value="focus">Focus & Concentration</option>
+                    <option value="kickstart">Morning Kickstart</option>
+                    <option value="unmotivated">Energy Boost</option>
+                </optgroup>
+                <optgroup label="Emotional Balance">
+                    <option value="happy">Pure Joy / Upbeat</option>
+                    <option value="anxious">Relieve Anxiety</option>
+                    <option value="heartbroken">Emotional Healing</option>
+                    <option value="socially-drained">Social Recharge</option>
+                </optgroup>
+                <optgroup label="Rest">
+                    <option value="stressed">De-stress & Meditate</option>
+                    <option value="sleepy">Deep Sleep Prep</option>
+                </optgroup>
+            </select>
 
-            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">TIME GOAL</div>
-            <div style="display:flex; align-items:center; gap:8px; margin:6px 0;">
-                <button class="adj-btn" onclick="adjustGoal(-1)">-</button>
-                <input type="number" id="timeGoal" value="25">
-                <button class="adj-btn" onclick="adjustGoal(1)">+</button>
-            </div>
+            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">TIME GOAL (MIN)</div>
+            <div style="display:flex; align-items:center; gap:8px; margin:6px 0;">
+                <button onclick="adjGoal(-1)" class="login-btn" style="background:var(--input-bg); color:var(--text);">-</button>
+                <input type="number" id="timeGoal" value="25">
+                <button onclick="adjGoal(1)" class="login-btn" style="background:var(--input-bg); color:var(--text);">+</button>
+            </div>
 
-            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">VOLUME</div>
-            <div style="display:flex; align-items:center; gap:8px; margin:6px 0;">
-                <button class="adj-btn" onclick="adjustVolume(-10)">-</button>
-                <input type="range" id="volSlider" min="0" max="100" value="100" style="flex:1;" oninput="setVolume(this.value)">
-                <button class="adj-btn" onclick="adjustVolume(10)">+</button>
-            </div>
+            <span id="loadStatus"></span>
+            <button class="cal-btn" onclick="calibrate()" id="calBtn">Calibrate</button>
+            
+            <div id="sessionControls" style="display:none; gap:8px; margin-top:12px;">
+                <button class="login-btn" onclick="togglePlayPause()" id="playPauseBtn" style="flex:1">Pause</button>
+                <button class="login-btn" onclick="stopSession()" style="flex:1; background:#ff4d4d;">Stop</button>
+            </div>
 
-            <button class="cal-btn" onclick="calibrate()" id="calBtn">Calibrate</button>
-            
-            <div class="control-btns" id="sessionControls">
-                <button class="icon-btn" onclick="togglePlayPause()" id="playPauseBtn">Pause</button>
-                <button class="icon-btn" onclick="shuffle()">Shuffle</button>
-                <button class="icon-btn" onclick="stopSession()" style="background:#ff4d4d;">Stop</button>
-            </div>
-
-            <div id="result" class="video-box"><div id="player"></div></div>
-            <p id="trackTitle" style="font-size:10px; margin-top:8px; font-weight:600;"></p>
-        </div>
-    </main>
+            <div id="result" class="video-box"><div id="player"></div></div>
+            <p id="trackTitle" style="font-size:10px; margin-top:8px; font-weight:600;"></p>
+        </div>
+    </main>
 
 <script>
-    const API_BASE_URL = 'https://zentune.onrender.com';
-    let ytPlayer, timerInterval, seconds = 0, isPaused = false, trackPool = [], poolIdx = 0;
-    let userId = sessionStorage.getItem('zentune_id'); 
-    let userVolSetting = 100;
+    const API_BASE_URL = 'https://zentune.onrender.com';
+    let ytPlayer, timerInterval, seconds = 0, trackPool = [], poolIdx = 0, isPaused = false;
+    let userId = localStorage.getItem('zentune_id');
 
-    function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
-    function toggleInsights() {
-        document.body.classList.toggle('show-stats');
-        document.getElementById('focBtn').innerText = document.body.classList.contains('show-stats') ? "HIDE INSIGHTS" : "SHOW INSIGHTS";
-    }
+    window.onload = () => { if(userId) { login(false, userId); } }
 
-    function onYouTubeIframeAPIReady() {
-        ytPlayer = new YT.Player('player', { 
-            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1 },
-            events: { 'onStateChange': onPlayerStateChange } 
-        });
-    }
+    function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
+    function toggleHelp() { 
+        const m = document.getElementById('helpModal');
+        m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+    }
 
-    function onPlayerStateChange(event) {
-        const videoData = ytPlayer.getVideoData();
-        // Tightened Ad Detection
-        const isAd = ytPlayer.getDuration() > 0 && ytPlayer.getDuration() < 65 && (videoData.title === "" || videoData.author === "");
+    function login(isNew, manualId) {
+        userId = manualId || document.getElementById('welcomeUid').value;
+        if(!userId) return;
+        localStorage.setItem('zentune_id', userId);
+        document.getElementById('welcomeBox').style.display = 'none';
+        document.getElementById('userGreeting').style.display = 'block';
+        document.getElementById('userLabel').innerText = `USER: ${userId}`;
+    }
 
-        if (event.data == YT.PlayerState.PLAYING) {
-            if (isAd) {
-                // Ad is playing: Mute and halt timer
-                ytPlayer.setVolume(0); 
-                clearInterval(timerInterval);
-                document.getElementById('playPauseBtn').innerText = "Ad Playing...";
-            } else {
-                // Content is playing: Restore volume and timer
-                ytPlayer.setVolume(userVolSetting);
-                isPaused = false;
-                document.getElementById('playPauseBtn').innerText = "Pause";
-                runTimer();
-            }
-        } else {
-            // Buffering, Paused, or Ended: Stop timer
-            clearInterval(timerInterval);
-        }
-    }
+    function logout() { localStorage.removeItem('zentune_id'); location.reload(); }
 
-    function runTimer() {
-        clearInterval(timerInterval);
-        timerInterval = setInterval(() => {
-            if (isPaused) return;
-            seconds++;
-            const m = Math.floor(seconds/60).toString().padStart(2,'0');
-            const s = (seconds%60).toString().padStart(2,'0');
-            document.getElementById('sessionTimer').innerText = `${m}:${s}`;
-        }, 1000);
-    }
+    function onYouTubeIframeAPIReady() {
+        ytPlayer = new YT.Player('player', { 
+            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0 },
+            events: { 
+                'onStateChange': onPlayerStateChange,
+                'onReady': () => { console.log("Player ready"); }
+            } 
+        });
+    }
 
-    async function calibrate() {
-        const mood = document.getElementById('moodInput').value;
-        const btn = document.getElementById('calBtn');
-        btn.innerText = "Analyzing..."; btn.disabled = true;
-        try {
-            const res = await fetch(`${API_BASE_URL}/identify`, {
-                method:'POST', headers:{'Content-Type':'application/json'}, 
-                body:JSON.stringify({mood:mood, user_id: userId || "guest"})
-            });
-            const data = await res.json();
-            if(data.status==='success' && data.tracks && data.tracks.length > 0) { 
-                trackPool=data.tracks; poolIdx=0; 
-                const url = trackPool[0].preview_url;
-                const vidId = url.includes('embed/') ? url.split('embed/')[1] : url;
-                ytPlayer.loadVideoById(vidId);
-                document.getElementById('trackTitle').innerText = trackPool[0].title;
-                document.getElementById('result').style.display='block';
-                document.getElementById('sessionControls').style.display='flex';
-                seconds = 0;
-            }
-        } catch(e) { console.error("Calibrate error:", e); }
-        btn.innerText = "Calibrate"; btn.disabled = false;
-    }
+    function onPlayerStateChange(event) {
+        const videoData = ytPlayer.getVideoData();
+        const isAd = ytPlayer.getDuration() > 0 && ytPlayer.getDuration() < 65 && (videoData.title === "" || videoData.author === "");
 
-    function setVolume(val) { userVolSetting = val; if(ytPlayer?.setVolume) ytPlayer.setVolume(val); }
-    function adjustVolume(v) { let n = Math.min(Math.max(parseInt(userVolSetting)+v, 0), 100); document.getElementById('volSlider').value = n; setVolume(n); }
-    function adjustGoal(v) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value)+v); }
-    
-    function togglePlayPause() { 
-        const state = ytPlayer.getPlayerState();
-        if(state === YT.PlayerState.PLAYING) {
-            ytPlayer.pauseVideo(); isPaused = true;
-        } else {
-            ytPlayer.playVideo(); isPaused = false;
-        }
-    }
-    
-    function shuffle() { 
-        if(!trackPool.length) return;
-        poolIdx = (poolIdx + 1) % trackPool.length;
-        const url = trackPool[poolIdx].preview_url;
-        const vidId = url.includes('embed/') ? url.split('embed/')[1] : url;
-        ytPlayer.loadVideoById(vidId);
-        document.getElementById('trackTitle').innerText = trackPool[poolIdx].title;
-    }
+        if (event.data == YT.PlayerState.PLAYING) {
+            document.getElementById('loadStatus').innerText = ""; // Clear message on play
+            if (isAd) {
+                ytPlayer.setVolume(0); 
+                clearInterval(timerInterval);
+                document.getElementById('playPauseBtn').innerText = "Ad Playing...";
+            } else {
+                ytPlayer.setVolume(100);
+                isPaused = false;
+                document.getElementById('playPauseBtn').innerText = "Pause";
+                runTimer();
+            }
+        } else if (event.data == YT.PlayerState.BUFFERING) {
+            document.getElementById('loadStatus').innerText = "Buffering frequency...";
+        } else {
+            clearInterval(timerInterval);
+        }
+    }
 
-    function stopSession() {
-        clearInterval(timerInterval);
-        if(ytPlayer?.stopVideo) ytPlayer.stopVideo();
-        document.getElementById('result').style.display = 'none';
-        document.getElementById('sessionControls').style.display = 'none';
-        document.getElementById('sessionTimer').innerText = "00:00";
-    }
+    function runTimer() {
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (isPaused) return;
+            seconds++;
+            const m = Math.floor(seconds/60).toString().padStart(2,'0');
+            const s = (seconds%60).toString().padStart(2,'0');
+            document.getElementById('sessionTimer').innerText = `${m}:${s}`;
+        }, 1000);
+    }
 
-    function updateAura() {
-        const mood = document.getElementById('moodInput').value;
-        const colors = { focus: "#10b981", happy: "#f59e0b", heartbroken: "#f472b6", sleepy: "#1e3a8a", anxious: "#a855f7" };
-        document.documentElement.style.setProperty('--aura', colors[mood] || "#6c63ff");
-    }
+    async function calibrate() {
+        const mood = document.getElementById('moodInput').value;
+        const btn = document.getElementById('calBtn');
+        const status = document.getElementById('loadStatus');
+        
+        btn.disabled = true;
+        status.innerText = "Analyzing mood... please be patient.";
+        
+        try {
+            const res = await fetch(`${API_BASE_URL}/identify`, {
+                method:'POST', headers:{'Content-Type':'application/json'}, 
+                body:JSON.stringify({mood:mood, user_id: userId || "guest"})
+            });
+            const data = await res.json();
+            
+            if(data.status==='success' && data.tracks?.length > 0) { 
+                status.innerText = "Mood identified. Connecting to player...";
+                trackPool=data.tracks; poolIdx=0; 
+                const vidId = trackPool[0].preview_url.split('embed/')[1] || trackPool[0].preview_url;
+                ytPlayer.loadVideoById(vidId);
+                document.getElementById('trackTitle').innerText = trackPool[0].title;
+                document.getElementById('result').style.display='block';
+                document.getElementById('sessionControls').style.display='flex';
+                seconds = 0;
+            } else {
+                status.innerText = "Calibration failed. Try again.";
+                btn.disabled = false;
+            }
+        } catch(e) { 
+            status.innerText = "Connection error. Retrying...";
+            btn.disabled = false;
+        }
+    }
+
+    function adjGoal(v) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value)+v); }
+    function togglePlayPause() { 
+        if(ytPlayer.getPlayerState() === 1) { ytPlayer.pauseVideo(); isPaused = true; } 
+        else { ytPlayer.playVideo(); isPaused = false; }
+    }
+    function stopSession() {
+        clearInterval(timerInterval);
+        ytPlayer.stopVideo();
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('sessionControls').style.display = 'none';
+        document.getElementById('sessionTimer').innerText = "00:00";
+        document.getElementById('loadStatus').innerText = "";
+        document.getElementById('calBtn').disabled = false;
+    }
+    function updateAura() {
+        const mood = document.getElementById('moodInput').value;
+        const colors = { focus: "#10b981", happy: "#f59e0b", heartbroken: "#f472b6", sleepy: "#1e3a8a", anxious: "#a855f7" };
+        document.documentElement.style.setProperty('--aura', colors[mood] || "#6c63ff");
+    }
 </script>
 </body>
 </html>
