@@ -5,3 +5,4 @@ gunicorn==21.2.0
 httplib2
 python-dotenv
 google-api-python-client
+psycopg2-binary
