@@ -254,34 +254,61 @@
     function openGuide() { document.getElementById('guideOverlay').style.display = 'flex'; document.getElementById('helpFab').style.display = 'none'; }
     function closeGuide() { document.getElementById('guideOverlay').style.display = 'none'; document.getElementById('helpFab').style.display = 'flex'; }
 
-    function onYouTubeIframeAPIReady() {
-        ytPlayer = new YT.Player('player', {
-            height: '100%', width: '100%',
-            playerVars: { 'autoplay': 1, 'controls': 1, 'enablejsapi': 1, 'origin': window.location.origin },
-            events: { 'onStateChange': onPlayerStateChange, 'onError': onPlayerError }
-        });
-    }
+function onYouTubeIframeAPIReady() {
+    ytPlayer = new YT.Player('player', {
+        height: '100%',
+        width: '100%',
+        playerVars: {
+            'autoplay': 1,
+            'controls': 1,
+            'enablejsapi': 1,
+            'origin': window.location.origin 
+        },
+        events: {
+            'onStateChange': onPlayerStateChange,
+            'onError': onPlayerError 
+        }
+    });
+}
 
     function onPlayerError(event) {
         if ([101, 150, 153].includes(event.data)) shuffle();
     }
 
-function onPlayerStateChange(event) {
-    // Check if the player is playing AND it is not an advertisement
-    // Note: Some API versions use event.target.getAdState() if available
-    if (event.data == YT.PlayerState.PLAYING) {
-        
-        // We add a small check: if the duration is very short or 
-        // specific ad-indicators are present, we stay paused.
-        const isAd = ytPlayer.getVideoData().isLive === false && ytPlayer.getDuration() < 61 && ytPlayer.getVideoData().title === "";
+let userVolumeBeforeAd = 100; // Stores your preference to restore after ad
 
-        if (!isAd) {
+function onPlayerStateChange(event) {
+    const videoData = ytPlayer.getVideoData();
+    
+    // Logic to detect if an ad is currently playing
+    // YouTube typically hides metadata or uses specific flags for ads
+    const isAd = ytPlayer.getDuration() < 61 && videoData.title === "";
+
+    if (event.data == YT.PlayerState.PLAYING) {
+        if (isAd) {
+            console.log("Ad detected: Muting and pausing timer.");
+            // Store current volume before muting
+            userVolumeBeforeAd = document.getElementById('volSlider').value;
+            ytPlayer.setVolume(0); 
+            
+            isPaused = true;
+            clearInterval(timerInterval);
+            document.getElementById('playPauseBtn').innerText = "Ad Playing...";
+        } else {
+            // Restore volume and start timer for actual content
+            ytPlayer.setVolume(userVolumeBeforeAd);
+            document.getElementById('volVal').innerText = userVolumeBeforeAd;
+            
             isPaused = false;
             document.getElementById('playPauseBtn').innerText = "Pause";
             runTimer();
-        } else {
-            console.log("Ad detected. Timer holding...");
         }
+    } else if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.BUFFERING) {
+        isPaused = true;
+        document.getElementById('playPauseBtn').innerText = "Play";
+        clearInterval(timerInterval);
+    }
+}
         
     } else if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.BUFFERING) {
         isPaused = true;
