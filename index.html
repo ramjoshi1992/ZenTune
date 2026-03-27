@@ -64,11 +64,9 @@
         .progress-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 10px; transition: width 0.4s ease; }
         
         .timer { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 5px; letter-spacing: 1px; }
-        
         .goal-adjuster, .volume-adjuster { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
         .adj-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: var(--radius-md); cursor: pointer; font-size: 18px; font-weight: bold; }
         
-        /* CLEAN NUMBER INPUT (Arrows Removed) */
         input[type="number"]::-webkit-outer-spin-button,
         input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] {
@@ -105,7 +103,9 @@
         input:checked + .slider { background: var(--accent); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        #insightToggleBtn { background: #4a4a8a; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 700; }
+        /* Clubbed Insights Toggle Styling */
+        #insightToggleBtn { background: #4a4a8a; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 700; height: 35px; transition: 0.3s; }
+        #insightToggleBtn:hover { background: var(--accent); }
 
         input[type="range"] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: var(--input-bg); border-radius: 10px; }
@@ -143,6 +143,7 @@
                 <span id="userLabel"></span> 
                 <span onclick="logout()" style="color:#ff4d4d; cursor:pointer; margin-left:10px; font-size:10px; text-decoration:underline;">LOGOUT</span>
             </div>
+            <button onclick="toggleInsights()" id="insightToggleBtn">SHOW INSIGHTS</button>
         </div>
 
         <div class="settings-column">
@@ -154,7 +155,6 @@
                 Dark Mode
                 <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
             </div>
-            <button onclick="toggleInsights()" id="insightToggleBtn">SHOW INSIGHTS</button>
         </div>
     </nav>
 
@@ -223,15 +223,16 @@
     </main>
 
 <script>
-    /* ... JavaScript Logic remains unchanged from Baseline ... */
     const API_BASE_URL = 'https://zentune.onrender.com';
     let ytPlayer, trackPool = [], poolIdx = 0, timerInterval = null, seconds = 0;
     let isPaused = false, goalReached = false, isFlowing = false;
-    let userId = sessionStorage.getItem('zentune_id'); 
+    
+    // Switch to localStorage for persistence across refreshes
+    let userId = localStorage.getItem('zentune_id'); 
     let originalGoalMins = 25; 
 
     window.onload = () => { 
-        openGuide();
+        if(!userId) openGuide();
         if(userId) showUser(userId); 
         updateAura(); 
     };
@@ -310,49 +311,33 @@
     }
 
     async function login() {
-    const id = document.getElementById('uidInput').value.trim();
-    if(!id) return;
+        const id = document.getElementById('uidInput').value.trim();
+        if(!id) return;
 
-    const btn = document.querySelector('.login-btn');
-    const originalText = btn.innerText;
-    
-    // UI Feedback: Show loading state
-    btn.innerText = "Connecting...";
-    btn.disabled = true;
+        const btn = document.querySelector('.login-btn');
+        const originalText = btn.innerText;
+        btn.innerText = "Waking server...";
+        btn.disabled = true;
 
-    try {
-        // Added a longer timeout potential for Render cold starts
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => {
-            btn.innerText = "Waking server...";
-        }, 5000);
-
-        const res = await fetch(`${API_BASE_URL}/auth`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: id }),
-            signal: controller.signal
-        });
-
-        clearTimeout(timeoutId);
-        const data = await res.json();
-
-        if (data.status === 'success') {
-            userId = data.user_id;
-            sessionStorage.setItem('zentune_id', userId);
-            stopSession();
-            showUser(userId);
-        } else {
-            alert("Login failed: " + (data.message || "Invalid ID"));
+        try {
+            const res = await fetch(`${API_BASE_URL}/auth`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: id })
+            });
+            const data = await res.json();
+            if (data.status === 'success') {
+                userId = data.user_id;
+                localStorage.setItem('zentune_id', userId);
+                showUser(userId);
+            }
+        } catch (e) {
+            alert("Server is waking up. Please try again in a few seconds.");
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
         }
-    } catch (e) {
-        console.error("Login Error:", e);
-        alert("Server is taking a moment to wake up. Please wait 30 seconds and try again.");
-    } finally {
-        btn.innerText = originalText;
-        btn.disabled = false;
     }
-}
 
     function showUser(id) { 
         document.getElementById('loginForm').style.display='none'; 
@@ -362,10 +347,9 @@
     }
     
     function logout() { 
-        userId = null; sessionStorage.removeItem('zentune_id'); 
-        stopSession(); resetSessionState();
-        document.getElementById('loginForm').style.display='block'; 
-        document.getElementById('userGreeting').style.display='none';
+        userId = null; 
+        localStorage.removeItem('zentune_id'); 
+        location.reload(); 
     }
 
     async function fetchStats() {
