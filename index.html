@@ -19,7 +19,6 @@
             --radius-md: 12px;
             --sidebar-width: 260px;
         }
-        /* Dark mode variables (Defaulting to dark in logic below) */
         [data-theme="dark"] { 
             --bg: #0b0e14; --card: #161b22; --text: #efefff; --accent: #9d96ff; 
             --sidebar: #0d1117; --border: rgba(255,255,255,0.1); --input-bg: #0d1117;
@@ -27,15 +26,15 @@
 
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.5s ease; }
 
-        /* UI Change 1: Lowered top-nav padding from 0 to 20px to bring buttons down */
-        .top-nav { position: fixed; top: 0; right: 0; left: 0; height: 100px; display: flex; justify-content: flex-end; align-items: center; padding: 20px 30px 0; gap: 30px; z-index: 1000; pointer-events: none; }
+        /* UI Change 1: Buttons lowered (padding top added) */
+        .top-nav { position: fixed; top: 0; right: 0; left: 0; height: 100px; display: flex; justify-content: flex-end; align-items: center; padding: 25px 30px 0; gap: 30px; z-index: 1000; pointer-events: none; }
         .nav-group, .settings-column { pointer-events: auto; }
         .nav-group { display: flex; align-items: center; gap: 15px; margin-right: auto; }
         
         #uidInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 120px; }
         .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; }
 
-        /* UI Change 3: Defaulting sidebar to hidden (-100%) */
+        /* UI Change 3: Sidebar starts off-screen */
         .stats-panel { 
             position: fixed; left: 0; top: 0; bottom: 0;
             width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); 
@@ -44,7 +43,6 @@
             z-index: 900; 
             transform: translateX(-100%);
         }
-        /* When focus-active is OFF, we show the panel */
         body.show-stats .stats-panel { transform: translateX(0); }
 
         .stat-card { background: var(--card); padding: 15px; border-radius: var(--radius-lg); border: 1px solid var(--border); }
@@ -94,28 +92,9 @@
         input:checked + .slider:before { transform: translateX(20px); }
 
         #focBtn { background: #4a4a8a; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 700; }
-
-        /* Guide Overlays */
-        #guideOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.85); z-index: 5000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-        .guide-box { background: var(--card); padding: 30px; border-radius: 24px; max-width: 380px; width: 90%; text-align: center; border: 1px solid var(--accent); }
-        .help-fab { position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px; background: var(--accent); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 4000; font-weight: bold; font-size: 20px; }
     </style>
 </head>
 <body data-theme="dark">
-
-    <div id="guideOverlay">
-        <div class="guide-box">
-            <h2 style="color:var(--accent); margin-top:0;">Welcome to ZenTune</h2>
-            <p style="font-size:14px; opacity:0.9;">Bio-adaptive focus for deep work.</p>
-            <ul style="text-align:left; font-size:13px; line-height:1.7;">
-                <li><strong>Insights:</strong> Hidden by default for zero distraction.</li>
-                <li><strong>Muted Ads:</strong> Volume drops automatically during commercials.</li>
-                <li><strong>Dark Mode:</strong> Enabled by default to protect your eyes.</li>
-            </ul>
-            <button onclick="closeGuide()" class="cal-btn">Start Focusing</button>
-        </div>
-    </div>
-    <div id="helpFab" class="help-fab" onclick="openGuide()" style="display:none;">?</div>
 
     <nav class="top-nav">
         <div class="nav-group">
@@ -138,7 +117,7 @@
                 Dark Mode
                 <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
             </div>
-            <button onclick="toggleStats()" id="focBtn">SHOW INSIGHTS</button>
+            <button onclick="toggleInsights()" id="focBtn">SHOW INSIGHTS</button>
         </div>
     </nav>
 
@@ -156,9 +135,20 @@
             
             <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px;">FREQUENCY</div>
             <select id="moodInput" onchange="updateAura()">
-                <option value="focus">Focus & Concentration</option>
-                <option value="happy">Pure Joy / Upbeat</option>
-                <option value="stressed">De-stress & Meditate</option>
+                <optgroup label="Productivity">
+                    <option value="focus">Focus & Concentration</option>
+                    <option value="kickstart">Morning Kickstart</option>
+                    <option value="unmotivated">Energy Boost</option>
+                </optgroup>
+                <optgroup label="Emotional Balance">
+                    <option value="happy">Pure Joy / Upbeat</option>
+                    <option value="anxious">Relieve Anxiety</option>
+                    <option value="heartbroken">Emotional Healing</option>
+                </optgroup>
+                <optgroup label="Rest">
+                    <option value="stressed">De-stress & Meditate</option>
+                    <option value="sleepy">Deep Sleep Prep</option>
+                </optgroup>
             </select>
 
             <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px;">TIME GOAL</div>
@@ -192,27 +182,16 @@
     const API_BASE_URL = 'https://zentune.onrender.com';
     let ytPlayer, timerInterval, seconds = 0, isPaused = false, trackPool = [], poolIdx = 0;
     let userId = sessionStorage.getItem('zentune_id'); 
-    let userVol = 100;
-
-    window.onload = () => { 
-        openGuide();
-        if(userId) showUser(userId); 
-        updateAura(); 
-    };
-
-    function openGuide() { document.getElementById('guideOverlay').style.display = 'flex'; document.getElementById('helpFab').style.display = 'none'; }
-    function closeGuide() { document.getElementById('guideOverlay').style.display = 'none'; document.getElementById('helpFab').style.display = 'flex'; }
-
-    // UI Change 3: Logic for toggling Insights (Hidden by default)
-    function toggleStats() {
-        document.body.classList.toggle('show-stats');
-        const active = document.body.classList.contains('show-stats');
-        document.getElementById('focBtn').innerText = active ? "HIDE INSIGHTS" : "SHOW INSIGHTS";
-    }
+    let userVolSetting = 100;
 
     function toggleTheme() {
-        const isDark = document.getElementById('themeTog').checked;
-        document.body.dataset.theme = isDark ? 'dark' : '';
+        document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : '';
+    }
+
+    function toggleInsights() {
+        document.body.classList.toggle('show-stats');
+        const isVisible = document.body.classList.contains('show-stats');
+        document.getElementById('focBtn').innerText = isVisible ? "HIDE INSIGHTS" : "SHOW INSIGHTS";
     }
 
     function onYouTubeIframeAPIReady() {
@@ -222,22 +201,27 @@
     }
 
     function onPlayerStateChange(event) {
-        const isAd = ytPlayer.getDuration() < 61 && ytPlayer.getVideoData().title === "";
+        const videoData = ytPlayer.getVideoData();
+        const isAd = ytPlayer.getDuration() < 61 && videoData.title === "";
+
         if (event.data == YT.PlayerState.PLAYING) {
             if (isAd) {
-                userVol = document.getElementById('volSlider').value;
-                ytPlayer.setVolume(0);
+                // Ad Muting Logic
+                userVolSetting = document.getElementById('volSlider').value;
+                ytPlayer.setVolume(0); 
+                isPaused = true;
                 clearInterval(timerInterval);
                 document.getElementById('playPauseBtn').innerText = "Ad Playing...";
             } else {
-                ytPlayer.setVolume(userVol);
+                // Restore and Start Timer
+                ytPlayer.setVolume(userVolSetting);
                 isPaused = false;
                 document.getElementById('playPauseBtn').innerText = "Pause";
                 runTimer();
             }
-        } else {
+        } else if (event.data == YT.PlayerState.PAUSED) {
+            isPaused = true;
             clearInterval(timerInterval);
-            document.getElementById('playPauseBtn').innerText = "Play";
         }
     }
 
@@ -246,16 +230,48 @@
         timerInterval = setInterval(() => {
             if (isPaused) return;
             seconds++;
-            document.getElementById('sessionTimer').innerText = `${Math.floor(seconds/60).toString().padStart(2,'0')}:${(seconds%60).toString().padStart(2,'0')}`;
+            const m = Math.floor(seconds/60).toString().padStart(2,'0');
+            const s = (seconds%60).toString().padStart(2,'0');
+            document.getElementById('sessionTimer').innerText = `${m}:${s}`;
         }, 1000);
     }
 
-    function setVolume(val) { userVol = val; if(ytPlayer?.setVolume) ytPlayer.setVolume(val); }
-    function adjustVolume(v) { let n = Math.min(Math.max(parseInt(userVol)+v, 0), 100); document.getElementById('volSlider').value = n; setVolume(n); }
-    function adjustGoal(v) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value)+v); }
-    function updateAura() { /* Same as before */ }
-    function calibrate() { /* Same as before - Fetch from API and loadVideoById */ }
-    function stopSession() { /* Same as before - Save to DB and Reset */ }
+    function setVolume(val) {
+        userVolSetting = val;
+        if(ytPlayer?.setVolume) ytPlayer.setVolume(val);
+    }
+
+    function adjustVolume(v) {
+        let n = Math.min(Math.max(parseInt(userVolSetting)+v, 0), 100);
+        document.getElementById('volSlider').value = n;
+        setVolume(n);
+    }
+
+    function adjustGoal(v) {
+        let i = document.getElementById('timeGoal');
+        i.value = Math.max(1, parseInt(i.value)+v);
+    }
+
+    function updateAura() {
+        const mood = document.getElementById('moodInput').value;
+        const colors = { focus: "#10b981", happy: "#f59e0b", heartbroken: "#f472b6", sleepy: "#1e3a8a" };
+        document.documentElement.style.setProperty('--aura', colors[mood] || "#6c63ff");
+    }
+
+    async function calibrate() {
+        // ... (existing fetch logic)
+        document.getElementById('result').style.display = 'block';
+        document.getElementById('sessionControls').style.display = 'flex';
+    }
+
+    function stopSession() {
+        clearInterval(timerInterval);
+        if(ytPlayer?.stopVideo) ytPlayer.stopVideo();
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('sessionControls').style.display = 'none';
+        seconds = 0;
+        document.getElementById('sessionTimer').innerText = "00:00";
+    }
 </script>
 </body>
 </html>
