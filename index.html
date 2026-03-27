@@ -26,7 +26,8 @@
 
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.5s ease; }
 
-        .top-nav { position: fixed; top: 0; right: 0; left: 0; height: 80px; display: flex; justify-content: flex-end; align-items: center; padding: 0 30px; gap: 30px; z-index: 1000; pointer-events: none; }
+        /* Adjusted padding-top to 25px to bring buttons down */
+        .top-nav { position: fixed; top: 0; right: 0; left: 0; height: 80px; display: flex; justify-content: flex-end; align-items: center; padding: 25px 30px 0; gap: 30px; z-index: 1000; pointer-events: none; }
         .nav-group, .settings-column { pointer-events: auto; }
         .nav-group { display: flex; align-items: center; gap: 15px; margin-right: auto; }
         
@@ -36,22 +37,25 @@
         .stats-panel { 
             position: fixed; left: 0; top: 0; bottom: 0;
             width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); 
-            padding: 90px 20px 20px; display: flex; flex-direction: column; gap: 12px; 
+            padding: 110px 20px 20px; display: flex; flex-direction: column; gap: 12px; 
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
             z-index: 900; 
+            transform: translateX(-100%); /* Start Hidden */
         }
+        /* Reveal sidebar when class is present */
+        body.show-insights .stats-panel { transform: translateX(0); }
         body.focus-active .stats-panel { transform: translateX(-100%); }
 
         .stat-card { background: var(--card); padding: 15px; border-radius: var(--radius-lg); border: 1px solid var(--border); }
         .stat-val { font-size: 15px; font-weight: 700; color: var(--accent); }
 
-        /* FIXED LAYOUT: Changed from absolute to flex to prevent overlapping */
         .main-content { 
             flex: 1;
-            margin-left: var(--sidebar-width);
             display: flex; justify-content: center; align-items: center; 
             transition: all 0.5s ease; 
         }
+        /* Offset content only when insights are visible */
+        body.show-insights .main-content { margin-left: var(--sidebar-width); }
         body.focus-active .main-content { margin-left: 0; }
         
         .card { 
@@ -75,15 +79,8 @@
         .goal-adjuster, .volume-adjuster { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
         .adj-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: var(--radius-md); cursor: pointer; font-size: 18px; font-weight: bold; }
         
-        input[type="number"]::-webkit-outer-spin-button,
-        input[type="number"]::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-
         input[type="number"] {
-            -moz-appearance: textfield;
-            text-align: center; width: 100%; height: 40px; padding: 0 10px; margin: 6px 0; 
+            -moz-appearance: textfield; text-align: center; width: 100%; height: 40px; padding: 0 10px; margin: 6px 0; 
             border-radius: var(--radius-md); border: 1px solid var(--border); 
             background: var(--input-bg); color: var(--text); font-size: 14px; 
             font-weight: bold; outline: none;
@@ -98,8 +95,7 @@
         }
 
         .cal-btn { width: 100%; height: 44px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; margin-top: 10px; }
-        .cal-btn:disabled { opacity: 0.6; cursor: not-allowed; }
-        .continue-btn { background: #28a745 !important; animation: bounce 2s infinite; display: none; margin-top: 10px; }
+        .continue-btn { background: #28a745 !important; display: none; margin-top: 10px; }
 
         .control-btns { display: none; gap: 8px; margin-top: 12px; }
         .icon-btn { flex: 1; background: #4a4a8a; border: none; border-radius: var(--radius-md); color: white; padding: 10px; cursor: pointer; font-size: 14px; }
@@ -119,20 +115,16 @@
 
         #focBtn { background: #4a4a8a; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 700; }
 
-        /* Volume Slider Styling */
         input[type="range"] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: var(--input-bg); border-radius: 10px; }
         input[type="range"]::-webkit-slider-thumb { height: 16px; width: 16px; border-radius: 50%; background: var(--accent); cursor: pointer; -webkit-appearance: none; margin-top: -5px; }
 
-        /* Welcome Guide Overlays */
         #guideOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 5000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .guide-box { background: var(--card); padding: 30px; border-radius: 24px; max-width: 380px; width: 90%; text-align: center; border: 1px solid var(--accent); box-shadow: 0 0 30px var(--aura); }
         .help-fab { position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px; background: var(--accent); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 4000; font-weight: bold; font-size: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.2); }
     </style>
 </head>
-<body>
-
-    <div id="guideOverlay">
+<body data-theme="dark"> <div id="guideOverlay">
         <div class="guide-box">
             <h2 style="color:var(--accent); margin-top:0;">Welcome to ZenTune</h2>
             <p style="font-size:14px; opacity:0.9;">Bio-adaptive focus for deep work.</p>
@@ -166,9 +158,9 @@
             </div>
             <div class="theme-container">
                 Dark Mode
-                <label class="switch"><input type="checkbox" id="themeTog" onclick="toggleTheme()"><span class="slider"></span></label>
+                <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
             </div>
-            <button onclick="toggleFocus()" id="focBtn">FOCUS MODE: OFF</button>
+            <button onclick="toggleInsights()" id="insightToggleBtn" style="background: #4a4a8a; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 700;">SHOW INSIGHTS</button>
         </div>
     </nav>
 
@@ -240,8 +232,6 @@
     const API_BASE_URL = 'https://zentune.onrender.com';
     let ytPlayer, trackPool = [], poolIdx = 0, timerInterval = null, seconds = 0;
     let isPaused = false, goalReached = false, isFlowing = false;
-    
-    // Switch to sessionStorage for automatic logout on close
     let userId = sessionStorage.getItem('zentune_id'); 
     let originalGoalMins = 25; 
 
@@ -250,6 +240,12 @@
         if(userId) showUser(userId); 
         updateAura(); 
     };
+
+    function toggleInsights() {
+        document.body.classList.toggle('show-insights');
+        const isShown = document.body.classList.contains('show-insights');
+        document.getElementById('insightToggleBtn').innerText = isShown ? "HIDE INSIGHTS" : "SHOW INSIGHTS";
+    }
 
     function openGuide() { document.getElementById('guideOverlay').style.display = 'flex'; document.getElementById('helpFab').style.display = 'none'; }
     function closeGuide() { document.getElementById('guideOverlay').style.display = 'none'; document.getElementById('helpFab').style.display = 'flex'; }
@@ -262,35 +258,23 @@
         });
     }
 
-    function onPlayerError(event) {
-        if ([101, 150, 153].includes(event.data)) shuffle();
-    }
+    function onPlayerError(event) { if ([101, 150, 153].includes(event.data)) shuffle(); }
 
-function onPlayerStateChange(event) {
-    // Check if the player is playing AND it is not an advertisement
-    // Note: Some API versions use event.target.getAdState() if available
-    if (event.data == YT.PlayerState.PLAYING) {
-        
-        // We add a small check: if the duration is very short or 
-        // specific ad-indicators are present, we stay paused.
-        const isAd = ytPlayer.getVideoData().isLive === false && ytPlayer.getDuration() < 61 && ytPlayer.getVideoData().title === "";
-
-        if (!isAd) {
-            isPaused = false;
-            document.getElementById('playPauseBtn').innerText = "Pause";
-            runTimer();
-        } else {
-            console.log("Ad detected. Timer holding...");
+    function onPlayerStateChange(event) {
+        if (event.data == YT.PlayerState.PLAYING) {
+            const isAd = ytPlayer.getVideoData().isLive === false && ytPlayer.getDuration() < 61 && ytPlayer.getVideoData().title === "";
+            if (!isAd) {
+                isPaused = false;
+                document.getElementById('playPauseBtn').innerText = "Pause";
+                runTimer();
+            }
+        } else if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.BUFFERING) {
+            isPaused = true;
+            document.getElementById('playPauseBtn').innerText = "Play";
+            clearInterval(timerInterval);
         }
-        
-    } else if (event.data == YT.PlayerState.PAUSED || event.data == YT.PlayerState.BUFFERING) {
-        isPaused = true;
-        document.getElementById('playPauseBtn').innerText = "Play";
-        clearInterval(timerInterval);
     }
-}
 
-    // VOLUME FUNCTIONS
     function setVolume(val) {
         if(ytPlayer && ytPlayer.setVolume) {
             ytPlayer.setVolume(val);
@@ -316,16 +300,9 @@ function onPlayerStateChange(event) {
         val = Math.max(1, val + amount);
         input.value = val;
         originalGoalMins = val;
-        if (timerInterval) updateProgressBar();
     }
 
     function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
-    
-    function toggleFocus() { 
-        document.body.classList.toggle('focus-active'); 
-        const active = document.body.classList.contains('focus-active');
-        document.getElementById('focBtn').innerText = active ? "FOCUS MODE: ON" : "FOCUS MODE: OFF";
-    }
 
     function updateAura() {
         const mood = document.getElementById('moodInput').value;
@@ -358,13 +335,10 @@ function onPlayerStateChange(event) {
     }
     
     function logout() { 
-        if (seconds > 5 && !confirm("Save progress before logging out?")) return;
         userId = null; sessionStorage.removeItem('zentune_id'); 
         stopSession(); resetSessionState();
         document.getElementById('loginForm').style.display='block'; 
         document.getElementById('userGreeting').style.display='none';
-        document.getElementById('sTotal').innerText = "0";
-        document.getElementById('sTime').innerText = "0h 0m";
     }
 
     async function fetchStats() {
@@ -382,7 +356,6 @@ function onPlayerStateChange(event) {
     async function calibrate() {
         const mood = document.getElementById('moodInput').value;
         const btn = document.getElementById('calBtn');
-        originalGoalMins = parseInt(document.getElementById('timeGoal').value) || 25;
         btn.innerText = "Analyzing..."; btn.disabled = true;
         try {
             const res = await fetch(`${API_BASE_URL}/identify`, {
@@ -424,14 +397,10 @@ function onPlayerStateChange(event) {
             let s = (seconds % 60);
             let label = isFlowing ? "IN FLOW" : "SESSION";
             document.getElementById('sessionTimer').innerText = `${label}: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            updateProgressBar();
+            let percent = (seconds / (parseInt(document.getElementById('timeGoal').value) * 60)) * 100;
+            document.getElementById('goalBarFill').style.width = Math.min(percent, 100) + "%";
             if (seconds >= (parseInt(document.getElementById('timeGoal').value) * 60) && !goalReached) handleGoalReached();
         }, 1000);
-    }
-
-    function updateProgressBar() {
-        let percent = (seconds / (parseInt(document.getElementById('timeGoal').value) * 60)) * 100;
-        document.getElementById('goalBarFill').style.width = Math.min(percent, 100) + "%";
     }
 
     function handleGoalReached() {
