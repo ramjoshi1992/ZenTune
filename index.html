@@ -2,7 +2,6 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ZenTune Pro | Dashboard</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
@@ -21,7 +20,6 @@
 
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.5s ease; }
 
-        /* UI Fix: Buttons lowered */
         .top-nav { position: fixed; top: 0; right: 0; left: 0; height: 100px; display: flex; justify-content: flex-end; align-items: center; padding: 25px 30px 0; gap: 30px; z-index: 1000; pointer-events: none; }
         .nav-group, .settings-column { pointer-events: auto; }
         .nav-group { display: flex; align-items: center; gap: 15px; margin-right: auto; }
@@ -29,7 +27,6 @@
         #uidInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 120px; }
         .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; }
 
-        /* Sidebar Hidden by default */
         .stats-panel { 
             position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-width); 
             background: var(--sidebar); border-right: 1px solid var(--border); 
@@ -38,18 +35,18 @@
         }
         body.show-stats .stats-panel { transform: translateX(0); }
 
-        .main-content { flex: 1; display: flex; justify-content: center; align-items: center; }
+        .main-content { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; }
         
         .card { 
             background: var(--card); padding: 25px 30px; border-radius: 24px; 
-            width: 100%; max-width: 320px; text-align: center; border: 1px solid var(--border);
+            width: 100%; max-width: 340px; text-align: center; border: 1px solid var(--border);
             box-shadow: 0 0 50px var(--aura); animation: pulseAura var(--pulse-speed) infinite alternate ease-in-out;
+            display: flex; flex-direction: column;
         }
 
         @keyframes pulseAura { 0% { box-shadow: 0 0 20px var(--aura); } 100% { box-shadow: 0 0 70px var(--aura); } }
         
         .timer { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 5px; }
-        .goal-adjuster, .volume-adjuster { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
         .adj-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: var(--radius-md); cursor: pointer; font-weight: bold; }
         
         input[type="number"] { text-align: center; width: 100%; height: 40px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-weight: bold; outline: none; }
@@ -59,7 +56,9 @@
         .control-btns { display: none; gap: 8px; margin-top: 12px; }
         .icon-btn { flex: 1; background: #4a4a8a; border: none; border-radius: var(--radius-md); color: white; padding: 10px; cursor: pointer; }
 
-        .video-box { width: 100%; margin: 15px auto 0; aspect-ratio: 16/9; border-radius: var(--radius-md); overflow: hidden; display: none; background: #000; }
+        /* UI Fix: Ensure Skip Ad button is visible and video fits */
+        .video-box { width: 100%; margin: 15px auto 0; aspect-ratio: 16 / 9; border-radius: var(--radius-md); overflow: hidden; display: none; background: #000; position: relative; }
+        #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
         
         .settings-column { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
         .theme-container { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
@@ -132,14 +131,14 @@
             </select>
 
             <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">TIME GOAL</div>
-            <div class="goal-adjuster">
+            <div style="display:flex; align-items:center; gap:8px; margin:6px 0;">
                 <button class="adj-btn" onclick="adjustGoal(-1)">-</button>
                 <input type="number" id="timeGoal" value="25">
                 <button class="adj-btn" onclick="adjustGoal(1)">+</button>
             </div>
 
             <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">VOLUME</div>
-            <div class="volume-adjuster">
+            <div style="display:flex; align-items:center; gap:8px; margin:6px 0;">
                 <button class="adj-btn" onclick="adjustVolume(-10)">-</button>
                 <input type="range" id="volSlider" min="0" max="100" value="100" style="flex:1;" oninput="setVolume(this.value)">
                 <button class="adj-btn" onclick="adjustVolume(10)">+</button>
@@ -171,26 +170,32 @@
     }
 
     function onYouTubeIframeAPIReady() {
-        ytPlayer = new YT.Player('player', { events: { 'onStateChange': onPlayerStateChange } });
+        ytPlayer = new YT.Player('player', { 
+            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0, 'modestbranding': 1 },
+            events: { 'onStateChange': onPlayerStateChange } 
+        });
     }
 
     function onPlayerStateChange(event) {
         const videoData = ytPlayer.getVideoData();
-        // Robust Ad Detection: Short duration OR generic title OR "Ad" markers
-        const isAd = ytPlayer.getDuration() > 0 && ytPlayer.getDuration() < 61 && (videoData.title === "" || videoData.author === "");
+        // Tightened Ad Detection
+        const isAd = ytPlayer.getDuration() > 0 && ytPlayer.getDuration() < 65 && (videoData.title === "" || videoData.author === "");
 
         if (event.data == YT.PlayerState.PLAYING) {
             if (isAd) {
+                // Ad is playing: Mute and halt timer
                 ytPlayer.setVolume(0); 
                 clearInterval(timerInterval);
                 document.getElementById('playPauseBtn').innerText = "Ad Playing...";
             } else {
+                // Content is playing: Restore volume and timer
                 ytPlayer.setVolume(userVolSetting);
                 isPaused = false;
                 document.getElementById('playPauseBtn').innerText = "Pause";
                 runTimer();
             }
         } else {
+            // Buffering, Paused, or Ended: Stop timer
             clearInterval(timerInterval);
         }
     }
@@ -233,13 +238,16 @@
     function setVolume(val) { userVolSetting = val; if(ytPlayer?.setVolume) ytPlayer.setVolume(val); }
     function adjustVolume(v) { let n = Math.min(Math.max(parseInt(userVolSetting)+v, 0), 100); document.getElementById('volSlider').value = n; setVolume(n); }
     function adjustGoal(v) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value)+v); }
+    
     function togglePlayPause() { 
-        if(ytPlayer.getPlayerState() === YT.PlayerState.PLAYING) {
+        const state = ytPlayer.getPlayerState();
+        if(state === YT.PlayerState.PLAYING) {
             ytPlayer.pauseVideo(); isPaused = true;
         } else {
             ytPlayer.playVideo(); isPaused = false;
         }
     }
+    
     function shuffle() { 
         if(!trackPool.length) return;
         poolIdx = (poolIdx + 1) % trackPool.length;
@@ -248,6 +256,7 @@
         ytPlayer.loadVideoById(vidId);
         document.getElementById('trackTitle').innerText = trackPool[poolIdx].title;
     }
+
     function stopSession() {
         clearInterval(timerInterval);
         if(ytPlayer?.stopVideo) ytPlayer.stopVideo();
@@ -255,6 +264,7 @@
         document.getElementById('sessionControls').style.display = 'none';
         document.getElementById('sessionTimer').innerText = "00:00";
     }
+
     function updateAura() {
         const mood = document.getElementById('moodInput').value;
         const colors = { focus: "#10b981", happy: "#f59e0b", heartbroken: "#f472b6", sleepy: "#1e3a8a", anxious: "#a855f7" };
