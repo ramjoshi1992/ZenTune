@@ -1,202 +1,296 @@
-import os
-import ssl
-import sqlite3
-import httplib2
-import traceback
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-from dotenv import load_dotenv
-from googleapiclient.discovery import build
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ZenTune Pro | Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.youtube.com/iframe_api"></script>
+    <style>
+        :root { 
+            --bg: #cfd8dc; --card: #b2beb5; --sidebar: #f0f2f5; --text: #37474f;       
+            --accent: #6c63ff; --border: rgba(0,0,0,0.15); --input-bg: #e1e8eb;
+            --aura: rgba(108, 99, 255, 0.3);
+            --radius-lg: 18px; --radius-md: 12px;
+        }
+        [data-theme="dark"] { 
+            --bg: #0b0e14; --card: #161b22; --text: #efefff; --accent: #9d96ff; 
+            --sidebar: #0d1117; --border: rgba(255,255,255,0.1); --input-bg: #0d1117;
+        }
 
-# --- THE HARD SSL BYPASS ---
-# This removes the invisible characters that were causing your SyntaxError
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.5s ease; }
 
-try:
-    _create_unverified_https_context = ssl._create_unverified_context
-except AttributeError:
-    pass
-else:
-    ssl._create_default_https_context = _create_unverified_https_context
+        /* Welcome Box Overlay */
+        #welcomeBox {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.8); z-index: 2000;
+            display: flex; align-items: center; justify-content: center; backdrop-filter: blur(5px);
+        }
+        .welcome-card {
+            background: var(--card); padding: 40px; border-radius: 24px; text-align: center;
+            max-width: 400px; border: 1px solid var(--border); color: var(--text);
+        }
 
-# --- Initialize App ---
-load_dotenv()
-app = Flask(__name__)
-CORS(app)
+        /* Nav & Controls */
+        .top-nav { position: fixed; top: 0; right: 0; left: 0; height: 100px; display: flex; justify-content: flex-end; align-items: center; padding: 25px 30px 0; gap: 30px; z-index: 1000; pointer-events: none; }
+        .nav-group, .settings-column { pointer-events: auto; }
+        .nav-group { display: flex; align-items: center; gap: 15px; margin-right: auto; }
+        
+        #uidInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 120px; }
+        .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; }
 
-# Use your key from .env or the string provided
-api_key = os.getenv("GOOGLE_API_KEY")
+        /* Help Button */
+        .help-btn {
+            position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px;
+            background: var(--accent); color: white; border-radius: 50%; border: none;
+            font-weight: bold; font-size: 20px; cursor: pointer; z-index: 1500;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
 
-# Configure YouTube API with SSL Bypass
-http_unverified = httplib2.Http(disable_ssl_certificate_validation=True)
-youtube = build('youtube', 'v3', developerKey=api_key, http=http_unverified)
+        #helpModal {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); 
+            z-index: 2100; align-items: center; justify-content: center;
+        }
+        .modal-content { background: var(--card); padding: 30px; border-radius: 18px; width: 90%; max-width: 400px; position: relative; }
 
-# --- DATABASE LOGIC ---
-DB_NAME = 'zentune.db'
+        .main-content { flex: 1; display: flex; justify-content: center; align-items: center; padding: 20px; }
+        .card { 
+            background: var(--card); padding: 25px 30px; border-radius: 24px; 
+            width: 100%; max-width: 340px; text-align: center; border: 1px solid var(--border);
+            box-shadow: 0 0 50px var(--aura); transition: box-shadow 0.5s ease;
+        }
 
-def init_db():
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute('CREATE TABLE IF NOT EXISTS users (user_id TEXT PRIMARY KEY, last_goal INTEGER DEFAULT 25)')
-    c.execute('''CREATE TABLE IF NOT EXISTS history 
-                 (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                  user_id TEXT, 
-                  mood TEXT, 
-                  title TEXT, 
-                  url TEXT, 
-                  duration INTEGER DEFAULT 0,
-                  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
-    conn.commit()
-    conn.close()
+        .timer { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 5px; }
+        input, select { width: 100%; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; }
+        select { height: 44px; padding: 0 10px; margin: 8px 0; }
+        input[type="number"] { height: 40px; text-align: center; font-weight: bold; }
 
-init_db()
+        .cal-btn { width: 100%; height: 44px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; margin-top: 10px; }
+        .cal-btn:disabled { opacity: 0.6; cursor: wait; }
 
-# --- HELPER ---
-def get_search_query(mood):
-    mood_map = {
-        "focus": "lofi hip hop radio deep focus study",
-        "happy": "positive vibes feel good pop hits 2026",
-        "kickstart": "uplifting acoustic morning coffee vibes",
-        "anxious": "432hz solfeggio frequencies anxiety relief",
-        "stressed": "tibetan singing bowls meditation stress",
-        "heartbroken": "healing piano ambient for emotional release",
-        "unmotivated": "upbeat morning motivation music energy",
-        "socially-drained": "soft minimalist ambient for recharging",
-        "sleepy": "delta waves deep sleep music no loop",
-        "deepwork": "binaural beats alpha waves concentration"
+        /* Loading Status Styling */
+        #loadStatus { font-size: 11px; font-weight: 600; color: var(--accent); margin-top: 10px; height: 14px; display: block; }
+
+        .video-box { width: 100%; margin: 15px auto 0; aspect-ratio: 16/9; border-radius: var(--radius-md); overflow: hidden; display: none; background: #000; position: relative; }
+        #player { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
+
+        .settings-column { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; }
+        .theme-container { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+        .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; inset: 0; background: #999; border-radius: 20px; transition: 0.4s; }
+        .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background: white; border-radius: 50%; transition: 0.4s; }
+        input:checked + .slider { background: var(--accent); }
+        input:checked + .slider:before { transform: translateX(20px); }
+    </style>
+</head>
+<body data-theme="dark">
+
+    <div id="welcomeBox">
+        <div class="welcome-card">
+            <h2>Welcome to ZenTune</h2>
+            <p>Personalized frequency therapy is initializing. Enter your ID.</p>
+            <input type="text" id="welcomeUid" placeholder="Enter User ID" style="padding: 10px; margin-bottom: 15px;">
+            <button onclick="login(true)" class="login-btn" style="width:100%">Start Session</button>
+        </div>
+    </div>
+
+    <button class="help-btn" onclick="toggleHelp()">?</button>
+    <div id="helpModal" onclick="toggleHelp()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <h3>Quick Help</h3>
+            <ul style="text-align:left; font-size: 14px; line-height: 1.6;">
+                <li><b>Wait for Load:</b> First calibration may take a few seconds to connect to the player.</li>
+                <li><b>Calibrate:</b> Finds the frequency matching your current need.</li>
+                <li><b>Flow Safeguard:</b> Maintains state across sessions.</li>
+            </ul>
+            <button onclick="toggleHelp()" class="cal-btn">Close</button>
+        </div>
+    </div>
+
+    <nav class="top-nav">
+        <div class="nav-group">
+            <div id="userGreeting" style="display:none; font-size: 13px; font-weight:bold;">
+                <span id="userLabel"></span> 
+                <span onclick="logout()" style="color:#ff4d4d; cursor:pointer; margin-left:10px; font-size:10px; text-decoration:underline;">LOGOUT</span>
+            </div>
+        </div>
+        <div class="settings-column">
+            <div class="theme-container">
+                Flow Safeguard
+                <label class="switch"><input type="checkbox" id="flowTog" checked><span class="slider"></span></label>
+            </div>
+            <div class="theme-container">
+                Dark Mode
+                <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="card" id="mainCard">
+            <h1 style="margin: 0 0 5px 0; font-size: 22px;">ZenTune</h1>
+            <div class="timer" id="sessionTimer">00:00</div>
+            
+            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">FREQUENCY</div>
+            <select id="moodInput" onchange="updateAura()">
+                <optgroup label="Productivity">
+                    <option value="focus">Focus & Concentration</option>
+                    <option value="kickstart">Morning Kickstart</option>
+                    <option value="unmotivated">Energy Boost</option>
+                </optgroup>
+                <optgroup label="Emotional Balance">
+                    <option value="happy">Pure Joy / Upbeat</option>
+                    <option value="anxious">Relieve Anxiety</option>
+                    <option value="heartbroken">Emotional Healing</option>
+                    <option value="socially-drained">Social Recharge</option>
+                </optgroup>
+                <optgroup label="Rest">
+                    <option value="stressed">De-stress & Meditate</option>
+                    <option value="sleepy">Deep Sleep Prep</option>
+                </optgroup>
+            </select>
+
+            <div style="text-align:left; font-size:9px; font-weight:bold; margin-top:10px; opacity:0.8;">TIME GOAL (MIN)</div>
+            <div style="display:flex; align-items:center; gap:8px; margin:6px 0;">
+                <button onclick="adjGoal(-1)" class="login-btn" style="background:var(--input-bg); color:var(--text);">-</button>
+                <input type="number" id="timeGoal" value="25">
+                <button onclick="adjGoal(1)" class="login-btn" style="background:var(--input-bg); color:var(--text);">+</button>
+            </div>
+
+            <span id="loadStatus"></span>
+            <button class="cal-btn" onclick="calibrate()" id="calBtn">Calibrate</button>
+            
+            <div id="sessionControls" style="display:none; gap:8px; margin-top:12px;">
+                <button class="login-btn" onclick="togglePlayPause()" id="playPauseBtn" style="flex:1">Pause</button>
+                <button class="login-btn" onclick="stopSession()" style="flex:1; background:#ff4d4d;">Stop</button>
+            </div>
+
+            <div id="result" class="video-box"><div id="player"></div></div>
+            <p id="trackTitle" style="font-size:10px; margin-top:8px; font-weight:600;"></p>
+        </div>
+    </main>
+
+<script>
+    const API_BASE_URL = 'https://zentune.onrender.com';
+    let ytPlayer, timerInterval, seconds = 0, trackPool = [], poolIdx = 0, isPaused = false;
+    let userId = localStorage.getItem('zentune_id');
+
+    window.onload = () => { if(userId) { login(false, userId); } }
+
+    function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
+    function toggleHelp() { 
+        const m = document.getElementById('helpModal');
+        m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
     }
-    return mood_map.get(mood.lower(), "calming ambient healing music")
 
-# --- ROUTES ---
-
-@app.route('/auth', methods=['POST'])
-def authenticate():
-    user_id = request.json.get('user_id', '').strip()
-    if not user_id:
-        return jsonify({"status": "error", "message": "ID required"}), 400
-    
-    conn = sqlite3.connect(DB_NAME)
-    c = conn.cursor()
-    c.execute('SELECT user_id FROM users WHERE user_id = ?', (user_id,))
-    user = c.fetchone()
-    
-    if not user:
-        c.execute('INSERT INTO users (user_id) VALUES (?)', (user_id,))
-        conn.commit()
-        msg = "Account created!"
-    else:
-        msg = "Welcome back!"
-    
-    conn.close()
-    return jsonify({"status": "success", "message": msg, "user_id": user_id})
-
-@app.route('/identify', methods=['POST'])
-def identify_song():
-    try:
-        data = request.json
-        mood = data.get('mood', 'focus')
-        uid = data.get('user_id')
-        
-        query = get_search_query(mood)
-
-        search_req = youtube.search().list(
-            q=query, 
-            part="snippet", 
-            type="video", 
-            videoCategoryId="10", 
-            videoEmbeddable="true", 
-            maxResults=5
-        )
-        res = search_req.execute()
-
-        tracks = [{
-            "title": i['snippet']['title'],
-            "artist": i['snippet']['channelTitle'],
-            "preview_url": f"https://www.youtube.com/embed/{i['id']['videoId']}",
-            "external_link": f"https://www.youtube.com/watch?v={i['id']['videoId']}"
-        } for i in res.get('items', [])]
-
-        return jsonify({"status": "success", "tracks": tracks})
-    except Exception as e:
-        print(f"Error: {e}")
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/stop', methods=['POST'])
-def stop_session():
-    # REPAIRED: This now saves directly to the SQLite database
-    data = request.json
-    uid = data.get('user_id')
-    duration_seconds = data.get('duration', 0)
-    duration_minutes = round(duration_seconds / 60)
-    mood = data.get('mood')
-
-    if not uid:
-        return jsonify({"status": "error", "message": "User ID required"}), 400
-
-    try:
-        conn = sqlite3.connect(DB_NAME)
-        c = conn.cursor()
-        c.execute('INSERT INTO history (user_id, mood, duration) VALUES (?, ?, ?)', 
-                  (uid, mood, duration_minutes))
-        conn.commit()
-        conn.close()
-        return jsonify({"status": "success", "message": "Session saved"})
-    except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
-
-@app.route('/stats/<user_id>', methods=['GET'])
-def get_stats(user_id):
-    mood_names = {
-        "focus": "Focus & Concentration",
-        "happy": "Pure Joy / Upbeat",
-        "kickstart": "Morning Kickstart",
-        "anxious": "Relieve Anxiety",
-        "stressed": "De-stress & Meditate",
-        "heartbroken": "Emotional Healing",
-        "unmotivated": "Energy Boost",
-        "socially-drained": "Social Recharge",
-        "sleepy": "Deep Sleep Prep",
-        "deepwork": "Deep Flow"
+    function login(isNew, manualId) {
+        userId = manualId || document.getElementById('welcomeUid').value;
+        if(!userId) return;
+        localStorage.setItem('zentune_id', userId);
+        document.getElementById('welcomeBox').style.display = 'none';
+        document.getElementById('userGreeting').style.display = 'block';
+        document.getElementById('userLabel').innerText = `USER: ${userId}`;
     }
 
-    conn = None
-    try:
-        conn = sqlite3.connect(DB_NAME, timeout=10)
-        c = conn.cursor()
+    function logout() { localStorage.removeItem('zentune_id'); location.reload(); }
+
+    function onYouTubeIframeAPIReady() {
+        ytPlayer = new YT.Player('player', { 
+            playerVars: { 'autoplay': 1, 'controls': 1, 'rel': 0 },
+            events: { 
+                'onStateChange': onPlayerStateChange,
+                'onReady': () => { console.log("Player ready"); }
+            } 
+        });
+    }
+
+    function onPlayerStateChange(event) {
+        const videoData = ytPlayer.getVideoData();
+        const isAd = ytPlayer.getDuration() > 0 && ytPlayer.getDuration() < 65 && (videoData.title === "" || videoData.author === "");
+
+        if (event.data == YT.PlayerState.PLAYING) {
+            document.getElementById('loadStatus').innerText = ""; // Clear message on play
+            if (isAd) {
+                ytPlayer.setVolume(0); 
+                clearInterval(timerInterval);
+                document.getElementById('playPauseBtn').innerText = "Ad Playing...";
+            } else {
+                ytPlayer.setVolume(100);
+                isPaused = false;
+                document.getElementById('playPauseBtn').innerText = "Pause";
+                runTimer();
+            }
+        } else if (event.data == YT.PlayerState.BUFFERING) {
+            document.getElementById('loadStatus').innerText = "Buffering frequency...";
+        } else {
+            clearInterval(timerInterval);
+        }
+    }
+
+    function runTimer() {
+        clearInterval(timerInterval);
+        timerInterval = setInterval(() => {
+            if (isPaused) return;
+            seconds++;
+            const m = Math.floor(seconds/60).toString().padStart(2,'0');
+            const s = (seconds%60).toString().padStart(2,'0');
+            document.getElementById('sessionTimer').innerText = `${m}:${s}`;
+        }, 1000);
+    }
+
+    async function calibrate() {
+        const mood = document.getElementById('moodInput').value;
+        const btn = document.getElementById('calBtn');
+        const status = document.getElementById('loadStatus');
         
-        c.execute("SELECT COUNT(*) FROM history WHERE user_id=?", (user_id,))
-        total_sessions = c.fetchone()[0] or 0
-
-        c.execute("SELECT SUM(duration) FROM history WHERE user_id=?", (user_id,))
-        total_minutes = c.fetchone()[0] or 0
+        btn.disabled = true;
+        status.innerText = "Analyzing mood... please be patient.";
         
-        hours = total_minutes // 60
-        remaining_mins = total_minutes % 60
-        time_display = f"{hours}h {remaining_mins}m"
+        try {
+            const res = await fetch(`${API_BASE_URL}/identify`, {
+                method:'POST', headers:{'Content-Type':'application/json'}, 
+                body:JSON.stringify({mood:mood, user_id: userId || "guest"})
+            });
+            const data = await res.json();
+            
+            if(data.status==='success' && data.tracks?.length > 0) { 
+                status.innerText = "Mood identified. Connecting to player...";
+                trackPool=data.tracks; poolIdx=0; 
+                const vidId = trackPool[0].preview_url.split('embed/')[1] || trackPool[0].preview_url;
+                ytPlayer.loadVideoById(vidId);
+                document.getElementById('trackTitle').innerText = trackPool[0].title;
+                document.getElementById('result').style.display='block';
+                document.getElementById('sessionControls').style.display='flex';
+                seconds = 0;
+            } else {
+                status.innerText = "Calibration failed. Try again.";
+                btn.disabled = false;
+            }
+        } catch(e) { 
+            status.innerText = "Connection error. Retrying...";
+            btn.disabled = false;
+        }
+    }
 
-        c.execute("SELECT mood FROM history WHERE user_id=? AND mood IS NOT NULL GROUP BY mood ORDER BY COUNT(mood) DESC LIMIT 1", (user_id,))
-        dom_res = c.fetchone()
-        dominant_display = "Initial Scan"
-        if dom_res and dom_res[0]:
-            dominant_display = mood_names.get(dom_res[0], dom_res[0])
-
-        c.execute("SELECT COUNT(DISTINCT date(timestamp)) FROM history WHERE user_id=?", (user_id,))
-        s_row = c.fetchone()
-        streak_display = f"{s_row[0] if s_row else 0} Days"
-
-        return jsonify({
-            "total": total_sessions,
-            "total_time": time_display,
-            "dominant": dominant_display,
-            "streak": streak_display
-        })
-
-    except Exception as e:
-        traceback.print_exc() 
-        return jsonify({"status": "error", "message": str(e)}), 500
-    finally:
-        if conn:
-            conn.close()
-
-if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    function adjGoal(v) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value)+v); }
+    function togglePlayPause() { 
+        if(ytPlayer.getPlayerState() === 1) { ytPlayer.pauseVideo(); isPaused = true; } 
+        else { ytPlayer.playVideo(); isPaused = false; }
+    }
+    function stopSession() {
+        clearInterval(timerInterval);
+        ytPlayer.stopVideo();
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('sessionControls').style.display = 'none';
+        document.getElementById('sessionTimer').innerText = "00:00";
+        document.getElementById('loadStatus').innerText = "";
+        document.getElementById('calBtn').disabled = false;
+    }
+    function updateAura() {
+        const mood = document.getElementById('moodInput').value;
+        const colors = { focus: "#10b981", happy: "#f59e0b", heartbroken: "#f472b6", sleepy: "#1e3a8a", anxious: "#a855f7" };
+        document.documentElement.style.setProperty('--aura', colors[mood] || "#6c63ff");
+    }
+</script>
+</body>
+</html>
