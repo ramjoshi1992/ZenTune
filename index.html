@@ -105,11 +105,17 @@
 </head>
 <body data-theme="dark">
 
-    <div id="guideOverlay">
+<div id="guideOverlay">
         <div class="guide-box">
-            <h2 style="color:var(--accent); margin-top:0;">Welcome to ZenTune</h2>
-            <p style="font-size:14px; opacity:0.9;">From deep focus to deep sleep — soundscapes for every mood, every moment.</p>
-            <button onclick="closeGuide()" class="cal-btn">Get Started</button>
+            <h2 style="color:var(--accent); margin-top:0;">ZenTune Guide</h2>
+            <ul style="font-size:13px; opacity:0.9; line-height:1.6; text-align:left; margin-bottom: 20px; padding-left: 20px;">
+                <li><b>Mood Selection:</b> Choose a soundscape category (Productivity, Well-being, or Recovery) to match your current mental state.</li>
+                <li><b>Focus Goal:</b> Use the + and – buttons to set your target session length in minutes.</li>
+                <li><b>Calibrate:</b> This analyzes your settings and generates a scientifically-curated YouTube soundscape to match your mood.</li>
+                <li><b>Keep Playing:</b> When enabled, ZenTune will automatically transition to a new track once your current one ends, ensuring your focus state isn't broken by silence.</li>
+                <li><b>Insights:</b> Toggle this to reveal your sidebar, where you can track total sessions, cumulative focus time, and your daily usage streak.</li>
+            </ul>
+            <button onclick="closeGuide()" class="cal-btn">Got it</button>
         </div>
     </div>
 
