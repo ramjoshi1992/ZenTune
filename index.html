@@ -69,7 +69,13 @@
         
         input[type="number"] { text-align: center; width: 100%; height: 40px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-weight: bold; outline: none; }
         
-        select { width: 100%; height: 44px; padding: 0 15px; margin: 8px 0; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; cursor: pointer; }
+        /* FIXED DROP DOWN CSS */
+        select { 
+            width: 100%; height: 44px; padding: 0 15px; margin: 8px 0; 
+            border-radius: var(--radius-md); border: 1px solid var(--border); 
+            background: var(--input-bg); color: var(--text); outline: none; 
+            cursor: pointer; box-sizing: border-box;
+        }
 
         .cal-btn { width: 100%; height: 44px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; margin-top: 10px; }
         .control-btns { display: none; gap: 8px; margin-top: 12px; }
@@ -99,7 +105,7 @@
     <div id="guideOverlay">
         <div class="guide-box">
             <h2 style="color:var(--accent); margin-top:0;">Welcome to ZenTune</h2>
-            <p style="font-size:14px; opacity:0.9;">Bio-adaptive focus for deep work.</p>
+            <p style="font-size:14px; opacity:0.9;">From deep focus to deep sleep — soundscapes for every mood, every moment.</p>
             <button onclick="closeGuide()" class="cal-btn">Get Started</button>
         </div>
     </div>
@@ -147,15 +153,22 @@
             </div>
             
             <select id="moodInput" onchange="updateAura()">
-                <option value="focus">Focus & Concentration</option>
-                <option value="kickstart">Morning Kickstart</option>
-                <option value="unmotivated">Energy Boost</option>
-                <option value="happy">Pure Joy / Upbeat</option>
-                <option value="anxious">Relieve Anxiety</option>
-                <option value="heartbroken">Emotional Healing</option>
-                <option value="socially-drained">Social Recharge</option>
-                <option value="stressed">De-stress & Meditate</option>
-                <option value="sleepy">Deep Sleep Prep</option>
+                <optgroup label="Productivity">
+                    <option value="focus">Focus & Concentration</option>
+                    <option value="deepwork">Deep Flow Mode</option>
+                    <option value="kickstart">Morning Kickstart</option>
+                    <option value="unmotivated">Energy Boost</option>
+                </optgroup>
+                <optgroup label="Well-being">
+                    <option value="happy">Pure Joy / Upbeat</option>
+                    <option value="anxious">Relieve Anxiety</option>
+                    <option value="stressed">De-stress & Meditate</option>
+                </optgroup>
+                <optgroup label="Recovery">
+                    <option value="socially-drained">Social Recharge</option>
+                    <option value="heartbroken">Emotional Healing</option>
+                    <option value="sleepy">Deep Sleep Prep</option>
+                </optgroup>
             </select>
 
             <div class="goal-adjuster" style="display:flex; gap:5px;">
@@ -240,7 +253,7 @@
             }
         } catch(e) { 
             btn.innerText = "Waking server...";
-            setTimeout(() => calibrate(), 3000); // Retry logic for Render cold start
+            setTimeout(() => calibrate(), 3000); 
             return;
         }
         btn.innerText = originalText; btn.disabled = false;
@@ -300,7 +313,7 @@
     function openGuide() { document.getElementById('guideOverlay').style.display = 'flex'; }
     function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
     function adjustGoal(a) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value) + a); }
-    function updateAura() { /* Logic for changing background glow based on mood */ }
+    function updateAura() { }
     function logout() { localStorage.removeItem('zentune_id'); location.reload(); }
 </script>
 </body>
