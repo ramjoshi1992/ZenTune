@@ -2,7 +2,7 @@ import os
 import ssl
 import httplib2
 import traceback
-import psycopg2 # Replaced sqlite3 with psycopg2 for persistence
+import psycopg2
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -13,44 +13,54 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 load_dotenv()
 
 app = Flask(__name__)
+# Explicitly allow your GitHub frontend
 CORS(app, resources={r"/*": {"origins": "https://ramjoshi1992.github.io"}})
 
 # Pulls the 'Internal Database URL' from your Render Environment Variables
 DB_URL = os.getenv("DATABASE_URL")
 
-# --- Initialize YouTube API ---
+# --- YouTube API Initialization ---
 api_key = os.getenv("GOOGLE_API_KEY")
-http_unverified = httplib2.Http(disable_ssl_certificate_validation=True)
-youtube = build('youtube', 'v3', developerKey=api_key, http=http_unverified)
+
+def get_youtube_client():
+    """Builds the YouTube client with SSL bypass if needed."""
+    http_unverified = httplib2.Http(disable_ssl_certificate_validation=True)
+    return build('youtube', 'v3', developerKey=api_key, http=http_unverified)
 
 # --- DATABASE LOGIC (PostgreSQL) ---
 def get_db_connection():
-    # Connects to the Render Postgres instance
+    """Connects to the Render Postgres instance."""
     return psycopg2.connect(DB_URL)
 
 def init_db():
-    conn = get_db_connection()
-    c = conn.cursor()
-    # Create tables if they don't exist
-    c.execute('CREATE TABLE IF NOT EXISTS users (user_id TEXT PRIMARY KEY, last_goal INTEGER DEFAULT 25)')
-    c.execute('''CREATE TABLE IF NOT EXISTS history 
-                 (id SERIAL PRIMARY KEY, 
-                  user_id TEXT, 
-                  mood TEXT, 
-                  duration INTEGER DEFAULT 0,
-                  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-    conn.commit()
-    c.close()
-    conn.close()
+    """Recreates tables if they were lost during a migration."""
+    conn = None
+    try:
+        conn = get_db_connection()
+        c = conn.cursor()
+        c.execute('CREATE TABLE IF NOT EXISTS users (user_id TEXT PRIMARY KEY, last_goal INTEGER DEFAULT 25)')
+        c.execute('''CREATE TABLE IF NOT EXISTS history 
+                     (id SERIAL PRIMARY KEY, 
+                      user_id TEXT, 
+                      mood TEXT, 
+                      duration INTEGER DEFAULT 0,
+                      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+        conn.commit()
+        c.close()
+    except Exception as e:
+        print(f"Database Init Error: {e}")
+    finally:
+        if conn:
+            conn.close()
 
-# Run initialization on app start
+# Run initialization immediately
 init_db()
 
 # --- HELPER ---
 def get_search_query(mood):
     mood_map = {
         "focus": "lofi hip hop radio deep focus study",
-        "happy": "positive vibes feel good pop hits 2026",
+        "happy": "positive vibes feel good pop hits",
         "kickstart": "uplifting acoustic morning coffee vibes",
         "anxious": "432hz solfeggio frequencies anxiety relief",
         "stressed": "tibetan singing bowls meditation stress",
@@ -72,19 +82,23 @@ def authenticate():
     
     conn = get_db_connection()
     c = conn.cursor()
-    c.execute('SELECT user_id FROM users WHERE user_id = %s', (user_id,))
-    user = c.fetchone()
-    
-    if not user:
-        c.execute('INSERT INTO users (user_id) VALUES (%s)', (user_id,))
-        conn.commit()
-        msg = "Account created!"
-    else:
-        msg = "Welcome back!"
-    
-    c.close()
-    conn.close()
-    return jsonify({"status": "success", "message": msg, "user_id": user_id})
+    try:
+        c.execute('SELECT user_id FROM users WHERE user_id = %s', (user_id,))
+        user = c.fetchone()
+        
+        if not user:
+            c.execute('INSERT INTO users (user_id) VALUES (%s)', (user_id,))
+            conn.commit()
+            msg = "Account created!"
+        else:
+            msg = "Welcome back!"
+        
+        return jsonify({"status": "success", "message": msg, "user_id": user_id})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        c.close()
+        conn.close()
 
 @app.route('/identify', methods=['POST'])
 def identify_song():
@@ -93,6 +107,7 @@ def identify_song():
         mood = data.get('mood', 'focus')
         query = get_search_query(mood)
 
+        youtube = get_youtube_client()
         search_req = youtube.search().list(
             q=query, 
             part="snippet", 
@@ -112,7 +127,12 @@ def identify_song():
 
         return jsonify({"status": "success", "tracks": tracks})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        error_msg = str(e)
+        print(f"Identify Error: {error_msg}")
+        # Identify specific quota errors
+        if "quotaExceeded" in error_msg:
+            return jsonify({"status": "error", "message": "YouTube API Quota Exceeded. Try again tomorrow."}), 429
+        return jsonify({"status": "error", "message": "Failed to fetch tracks"}), 500
 
 @app.route('/stop', methods=['POST'])
 def stop_session():
@@ -125,17 +145,18 @@ def stop_session():
     if not uid:
         return jsonify({"status": "error", "message": "User ID required"}), 400
 
+    conn = get_db_connection()
+    c = conn.cursor()
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
         c.execute('INSERT INTO history (user_id, mood, duration) VALUES (%s, %s, %s)', 
                   (uid, mood, duration_minutes))
         conn.commit()
-        c.close()
-        conn.close()
         return jsonify({"status": "success", "message": "Session saved"})
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        c.close()
+        conn.close()
 
 @app.route('/stats/<user_id>', methods=['GET'])
 def get_stats(user_id):
@@ -147,10 +168,9 @@ def get_stats(user_id):
         "sleepy": "Deep Sleep Prep", "deepwork": "Deep Flow"
     }
 
+    conn = get_db_connection()
+    c = conn.cursor()
     try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        
         # Total Sessions
         c.execute("SELECT COUNT(*) FROM history WHERE user_id=%s", (user_id,))
         total_sessions = c.fetchone()[0] or 0
@@ -172,16 +192,18 @@ def get_stats(user_id):
         streak_row = c.fetchone()
         streak_display = f"{streak_row[0] if streak_row else 0} Days"
 
-        c.close()
-        conn.close()
         return jsonify({
             "total": total_sessions, "total_time": time_display,
             "dominant": dominant_display, "streak": streak_display
         })
-
     except Exception as e:
         traceback.print_exc() 
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": "Could not load stats"}), 500
+    finally:
+        c.close()
+        conn.close()
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5000)
+    # Use environment port for Render compatibility
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
