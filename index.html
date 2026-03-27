@@ -310,17 +310,49 @@
     }
 
     async function login() {
-        const id = document.getElementById('uidInput').value.trim();
-        if(!id) return;
-        try {
-            const res = await fetch(`${API_BASE_URL}/auth`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({user_id:id})});
-            const data = await res.json();
-            if(data.status==='success') { 
-                userId = data.user_id; sessionStorage.setItem('zentune_id', userId); 
-                stopSession(); showUser(userId); 
-            }
-        } catch(e) { console.error("Login Error:", e); }
+    const id = document.getElementById('uidInput').value.trim();
+    if(!id) return;
+
+    const btn = document.querySelector('.login-btn');
+    const originalText = btn.innerText;
+    
+    // UI Feedback: Show loading state
+    btn.innerText = "Connecting...";
+    btn.disabled = true;
+
+    try {
+        // Added a longer timeout potential for Render cold starts
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => {
+            btn.innerText = "Waking server...";
+        }, 5000);
+
+        const res = await fetch(`${API_BASE_URL}/auth`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: id }),
+            signal: controller.signal
+        });
+
+        clearTimeout(timeoutId);
+        const data = await res.json();
+
+        if (data.status === 'success') {
+            userId = data.user_id;
+            sessionStorage.setItem('zentune_id', userId);
+            stopSession();
+            showUser(userId);
+        } else {
+            alert("Login failed: " + (data.message || "Invalid ID"));
+        }
+    } catch (e) {
+        console.error("Login Error:", e);
+        alert("Server is taking a moment to wake up. Please wait 30 seconds and try again.");
+    } finally {
+        btn.innerText = originalText;
+        btn.disabled = false;
     }
+}
 
     function showUser(id) { 
         document.getElementById('loginForm').style.display='none'; 
