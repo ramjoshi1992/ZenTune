@@ -13,19 +13,12 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 load_dotenv()
 
 app = Flask(__name__)
-# Explicitly allow your GitHub frontend
+# Secure CORS for your GitHub Pages frontend
 CORS(app, resources={r"/*": {"origins": "https://ramjoshi1992.github.io"}})
 
 # Pulls the 'Internal Database URL' from your Render Environment Variables
 DB_URL = os.getenv("DATABASE_URL")
-
-# --- YouTube API Initialization ---
-api_key = os.getenv("GOOGLE_API_KEY")
-
-def get_youtube_client():
-    """Builds the YouTube client with SSL bypass if needed."""
-    http_unverified = httplib2.Http(disable_ssl_certificate_validation=True)
-    return build('youtube', 'v3', developerKey=api_key, http=http_unverified)
+API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # --- DATABASE LOGIC (PostgreSQL) ---
 def get_db_connection():
@@ -33,7 +26,7 @@ def get_db_connection():
     return psycopg2.connect(DB_URL)
 
 def init_db():
-    """Recreates tables if they were lost during a migration."""
+    """Recreates tables if they don't exist in the Postgres instance."""
     conn = None
     try:
         conn = get_db_connection()
@@ -47,6 +40,7 @@ def init_db():
                       timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
         conn.commit()
         c.close()
+        print("Postgres Database Initialized Successfully")
     except Exception as e:
         print(f"Database Init Error: {e}")
     finally:
@@ -64,7 +58,7 @@ def get_search_query(mood):
         "kickstart": "uplifting acoustic morning coffee vibes",
         "anxious": "432hz solfeggio frequencies anxiety relief",
         "stressed": "tibetan singing bowls meditation stress",
-        "heartbroken": "healing piano ambient for emotional release",
+        "heartbroken": "healing piano ambient emotional release",
         "unmotivated": "upbeat morning motivation music energy",
         "socially-drained": "soft minimalist ambient for recharging",
         "sleepy": "delta waves deep sleep music no loop",
@@ -102,19 +96,29 @@ def authenticate():
 
 @app.route('/identify', methods=['POST'])
 def identify_song():
+    # Hardcoded Backup tracks for when Quota is hit
+    FALLBACK_TRACKS = {
+        "focus": [{"title": "Lofi Study Beats (Backup)", "artist": "ZenTune", "preview_url": "https://www.youtube.com/embed/jfKfPfyJRdk"}],
+        "unmotivated": [{"title": "High Energy Phonk (Backup)", "artist": "ZenTune", "preview_url": "https://www.youtube.com/embed/7NOSDKb0H8M"}],
+        "anxious": [{"title": "Deep Healing Ambient (Backup)", "artist": "ZenTune", "preview_url": "https://www.youtube.com/embed/5qap5aO4i9A"}]
+    }
+
     try:
         data = request.json
-        mood = data.get('mood', 'focus')
+        mood = data.get('mood', 'focus').lower()
         query = get_search_query(mood)
 
-        youtube = get_youtube_client()
+        # Initialize YouTube client with SSL bypass
+        http_unverified = httplib2.Http(disable_ssl_certificate_validation=True)
+        youtube = build('youtube', 'v3', developerKey=API_KEY, http=http_unverified)
+
         search_req = youtube.search().list(
             q=query, 
             part="snippet", 
             type="video", 
             videoCategoryId="10", 
             videoEmbeddable="true", 
-            maxResults=5
+            maxResults=3
         )
         res = search_req.execute()
 
@@ -126,13 +130,21 @@ def identify_song():
         } for i in res.get('items', [])]
 
         return jsonify({"status": "success", "tracks": tracks})
+
     except Exception as e:
         error_msg = str(e)
-        print(f"Identify Error: {error_msg}")
-        # Identify specific quota errors
-        if "quotaExceeded" in error_msg:
-            return jsonify({"status": "error", "message": "YouTube API Quota Exceeded. Try again tomorrow."}), 429
-        return jsonify({"status": "error", "message": "Failed to fetch tracks"}), 500
+        print(f"IDENTIFY ERROR: {error_msg}")
+        
+        # If Quota is hit (403/429), return fallback tracks instead of an error
+        if "quotaExceeded" in error_msg or "403" in error_msg:
+            fallback = FALLBACK_TRACKS.get(mood, FALLBACK_TRACKS["focus"])
+            return jsonify({
+                "status": "success", 
+                "tracks": fallback, 
+                "note": "API Quota Limit reached. Using ZenTune backup selection."
+            })
+
+        return jsonify({"status": "error", "message": "Search failed"}), 500
 
 @app.route('/stop', methods=['POST'])
 def stop_session():
@@ -197,13 +209,11 @@ def get_stats(user_id):
             "dominant": dominant_display, "streak": streak_display
         })
     except Exception as e:
-        traceback.print_exc() 
         return jsonify({"status": "error", "message": "Could not load stats"}), 500
     finally:
         c.close()
         conn.close()
 
 if __name__ == '__main__':
-    # Use environment port for Render compatibility
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
