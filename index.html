@@ -14,10 +14,7 @@
             --bg: #cfd8dc; --card: #b2beb5; --sidebar: #f0f2f5; --text: #37474f;       
             --accent: #6c63ff; --border: rgba(0,0,0,0.15); --input-bg: #e1e8eb;
             --aura: rgba(108, 99, 255, 0.3);
-            --pulse-speed: 4s; 
-            --radius-lg: 18px;
-            --radius-md: 12px;
-            --sidebar-width: 260px;
+            --pulse-speed: 4s; --radius-lg: 18px; --radius-md: 12px; --sidebar-width: 260px;
         }
         [data-theme="dark"] { 
             --bg: #0b0e14; --card: #161b22; --text: #efefff; --accent: #9d96ff; 
@@ -26,7 +23,6 @@
 
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.5s ease; }
 
-        /* Adjusted padding-top to 25px to bring buttons down */
         .top-nav { position: fixed; top: 0; right: 0; left: 0; height: 80px; display: flex; justify-content: flex-end; align-items: center; padding: 25px 30px 0; gap: 30px; z-index: 1000; pointer-events: none; }
         .nav-group, .settings-column { pointer-events: auto; }
         .nav-group { display: flex; align-items: center; gap: 15px; margin-right: auto; }
@@ -39,22 +35,15 @@
             width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); 
             padding: 110px 20px 20px; display: flex; flex-direction: column; gap: 12px; 
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
-            z-index: 900; 
-            transform: translateX(-100%); /* Start Hidden */
+            z-index: 900; transform: translateX(-100%); 
         }
-        /* Reveal sidebar when class is present */
         body.show-insights .stats-panel { transform: translateX(0); }
         body.focus-active .stats-panel { transform: translateX(-100%); }
 
         .stat-card { background: var(--card); padding: 15px; border-radius: var(--radius-lg); border: 1px solid var(--border); }
         .stat-val { font-size: 15px; font-weight: 700; color: var(--accent); }
 
-        .main-content { 
-            flex: 1;
-            display: flex; justify-content: center; align-items: center; 
-            transition: all 0.5s ease; 
-        }
-        /* Offset content only when insights are visible */
+        .main-content { flex: 1; display: flex; justify-content: center; align-items: center; transition: all 0.5s ease; }
         body.show-insights .main-content { margin-left: var(--sidebar-width); }
         body.focus-active .main-content { margin-left: 0; }
         
@@ -79,6 +68,9 @@
         .goal-adjuster, .volume-adjuster { display: flex; align-items: center; gap: 8px; margin: 6px 0; }
         .adj-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: var(--radius-md); cursor: pointer; font-size: 18px; font-weight: bold; }
         
+        /* CLEAN NUMBER INPUT (Arrows Removed) */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         input[type="number"] {
             -moz-appearance: textfield; text-align: center; width: 100%; height: 40px; padding: 0 10px; margin: 6px 0; 
             border-radius: var(--radius-md); border: 1px solid var(--border); 
@@ -113,7 +105,7 @@
         input:checked + .slider { background: var(--accent); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        #focBtn { background: #4a4a8a; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 700; }
+        #insightToggleBtn { background: #4a4a8a; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 700; }
 
         input[type="range"] { -webkit-appearance: none; width: 100%; background: transparent; }
         input[type="range"]::-webkit-slider-runnable-track { width: 100%; height: 6px; cursor: pointer; background: var(--input-bg); border-radius: 10px; }
@@ -124,7 +116,9 @@
         .help-fab { position: fixed; bottom: 25px; right: 25px; width: 50px; height: 50px; background: var(--accent); color: white; border-radius: 50%; display: flex; justify-content: center; align-items: center; cursor: pointer; z-index: 4000; font-weight: bold; font-size: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); border: 2px solid rgba(255,255,255,0.2); }
     </style>
 </head>
-<body data-theme="dark"> <div id="guideOverlay">
+<body data-theme="dark">
+
+    <div id="guideOverlay">
         <div class="guide-box">
             <h2 style="color:var(--accent); margin-top:0;">Welcome to ZenTune</h2>
             <p style="font-size:14px; opacity:0.9;">Bio-adaptive focus for deep work.</p>
@@ -153,14 +147,14 @@
 
         <div class="settings-column">
             <div class="theme-container">
-                Keep listening
+                Flow Safeguard
                 <label class="switch"><input type="checkbox" id="flowTog" checked><span class="slider"></span></label>
             </div>
             <div class="theme-container">
                 Dark Mode
                 <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
             </div>
-            <button onclick="toggleInsights()" id="insightToggleBtn" style="background: #4a4a8a; color: white; border: none; padding: 6px 12px; border-radius: 20px; cursor: pointer; font-size: 10px; font-weight: 700;">SHOW INSIGHTS</button>
+            <button onclick="toggleInsights()" id="insightToggleBtn">SHOW INSIGHTS</button>
         </div>
     </nav>
 
@@ -229,6 +223,7 @@
     </main>
 
 <script>
+    /* ... JavaScript Logic remains unchanged from Baseline ... */
     const API_BASE_URL = 'https://zentune.onrender.com';
     let ytPlayer, trackPool = [], poolIdx = 0, timerInterval = null, seconds = 0;
     let isPaused = false, goalReached = false, isFlowing = false;
