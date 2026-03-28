@@ -11,7 +11,7 @@
     <script src="https://www.youtube.com/iframe_api?v=1.0.2"></script>
     <style>
         :root { 
-            --bg: #cfd8dc; --card: #b2beb5; --sidebar: #f0f2f5; --text: #37474f;       
+            --bg: #cfd8dc; --card: #b2beb5; --sidebar: #f0f2f5; --text: #37474f;        
             --accent: #6c63ff; --border: rgba(0,0,0,0.15); --input-bg: #e1e8eb;
             --aura: rgba(108, 99, 255, 0.3);
             --pulse-speed: 4s; --radius-lg: 18px; --radius-md: 12px; --sidebar-width: 260px;
@@ -218,11 +218,16 @@
     let ytPlayer, trackPool = [], poolIdx = 0, timerInterval = null, seconds = 0;
     let isPaused = false, goalReached = false, isFlowing = false;
     
-    let userId = sessionStorage.getItem('zentune_id'); 
+    // Switch to localStorage for persistent sessions
+    let userId = localStorage.getItem('zentune_id'); 
 
     window.onload = () => { 
-        if(!userId) openGuide();
-        if(userId) showUser(userId); 
+        if(!userId) {
+            openGuide();
+        } else {
+            console.log("Auto-logging in user:", userId);
+            showUser(userId); 
+        }
         updateAura(); 
     };
 
@@ -313,7 +318,6 @@
         ytPlayer.stopVideo();
         clearInterval(timerInterval);
 
-        // Save session if logged in
         if(userId) {
             try {
                 await fetch(`${API_BASE_URL}/stop`, {
@@ -365,7 +369,7 @@
 
             if (data.status === 'success') {
                 userId = data.user_id;
-                sessionStorage.setItem('zentune_id', userId);
+                localStorage.setItem('zentune_id', userId);
                 showUser(userId);
             } else {
                 alert(data.message || "Login failed.");
@@ -417,8 +421,10 @@
     function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
     function adjustGoal(a) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value) + a); }
     function updateAura() { }
+    
+    // Updated Logout Function
     function logout() { 
-        sessionStorage.removeItem('zentune_id'); 
+        localStorage.removeItem('zentune_id'); 
         location.reload(); 
     }
 </script>
