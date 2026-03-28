@@ -24,18 +24,27 @@ API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # --- DATABASE LOGIC (PostgreSQL) ---
 def get_db_connection():
-    # Get the URL from Render's environment
+    # 1. Fetch the URL from Render's environment
+    # We use os.environ.get to avoid a hard crash if it's missing
     db_url = os.environ.get('DATABASE_URL')
     
-    # Check if the URL actually exists to avoid the 'NoneType' error
+    # 2. Safety Check: If the variable is missing, we stop here with a clear log
     if not db_url:
-        raise ValueError("DATABASE_URL is not set in Render Environment Variables!")
+        print("CRITICAL ERROR: DATABASE_URL is not found in Environment Variables!")
+        return None
 
-    # Fix the 'postgres' vs 'postgresql' mismatch if necessary
+    # 3. Protocol Fix: SQLAlchemy/psycopg2 requires 'postgresql://'
+    # Render often provides 'postgres://', which causes the 'split' error
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
     
-    return psycopg2.connect(db_url)
+    # 4. Connect and return the connection object
+    try:
+        conn = psycopg2.connect(db_url)
+        return conn
+    except Exception as e:
+        print(f"DATABASE CONNECTION ERROR: {e}")
+        return None
 
 def init_db():
     conn = get_db_connection()
