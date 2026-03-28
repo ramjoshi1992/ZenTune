@@ -302,11 +302,16 @@
 }
 
     function playTrack(idx) {
-        poolIdx = idx;
-        let vidId = trackPool[idx].preview_url.includes('v=') ? trackPool[idx].preview_url.split('v=')[1].split('&')[0] : trackPool[idx].preview_url.split('/').pop();
-        ytPlayer.loadVideoById(vidId);
-        document.getElementById('trackTitle').innerText = trackPool[idx].title;
+    poolIdx = idx;
+    const track = trackPool[idx];
+    // This regex is the most reliable way to get the ID from a YouTube URL
+    const videoId = track.preview_url.match(/(?:https?:\/\/(?:www\.)?youtube\.com\/watch\?v=|https?:\/\/youtu\.be\/)([^& \n<]+)/)[1];
+    
+    if (ytPlayer && ytPlayer.loadVideoById) {
+        ytPlayer.loadVideoById(videoId);
+        document.getElementById('trackTitle').innerText = track.title;
     }
+}
 
     function togglePlayPause() {
         if (isPaused) {
