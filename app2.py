@@ -7,6 +7,8 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
+# Added for secure password handling
+from werkzeug.security import generate_password_hash, check_password_hash
 
 # --- SSL & Environment Setup ---
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -31,7 +33,12 @@ def init_db():
     try:
         conn = get_db_connection()
         c = conn.cursor()
-        c.execute('CREATE TABLE IF NOT EXISTS users (user_id TEXT PRIMARY KEY, last_goal INTEGER DEFAULT 25)')
+        # Updated users table to include password_hash
+        c.execute('''CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY, 
+            password_hash TEXT,
+            last_goal INTEGER DEFAULT 25
+        )''')
         c.execute('''CREATE TABLE IF NOT EXISTS history 
                      (id SERIAL PRIMARY KEY, 
                       user_id TEXT, 
@@ -71,23 +78,32 @@ def get_search_query(mood):
 @app.route('/auth', methods=['POST'])
 def authenticate():
     user_id = request.json.get('user_id', '').strip()
-    if not user_id:
-        return jsonify({"status": "error", "message": "ID required"}), 400
+    password = request.json.get('password', '').strip()
+    
+    if not user_id or not password:
+        return jsonify({"status": "error", "message": "ID and Password required"}), 400
     
     conn = get_db_connection()
     c = conn.cursor()
     try:
-        c.execute('SELECT user_id FROM users WHERE user_id = %s', (user_id,))
+        c.execute('SELECT user_id, password_hash FROM users WHERE user_id = %s', (user_id,))
         user = c.fetchone()
         
         if not user:
-            c.execute('INSERT INTO users (user_id) VALUES (%s)', (user_id,))
+            # Create new user with hashed password
+            hashed_pw = generate_password_hash(password)
+            c.execute('INSERT INTO users (user_id, password_hash) VALUES (%s, %s)', (user_id, hashed_pw))
             conn.commit()
             msg = "Account created!"
-        else:
-            msg = "Welcome back!"
+            return jsonify({"status": "success", "message": msg, "user_id": user_id})
         
-        return jsonify({"status": "success", "message": msg, "user_id": user_id})
+        # Verify existing user password
+        stored_hash = user[1]
+        if check_password_hash(stored_hash, password):
+            return jsonify({"status": "success", "message": "Welcome back!", "user_id": user_id})
+        else:
+            return jsonify({"status": "error", "message": "Invalid password"}), 401
+            
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
     finally:
@@ -96,7 +112,6 @@ def authenticate():
 
 @app.route('/identify', methods=['POST'])
 def identify_song():
-    # Hardcoded Backup tracks for when Quota is hit
     FALLBACK_TRACKS = {
         "focus": [{"title": "Lofi Study Beats (Backup)", "artist": "ZenTune", "preview_url": "https://www.youtube.com/embed/jfKfPfyJRdk"}],
         "unmotivated": [{"title": "High Energy Phonk (Backup)", "artist": "ZenTune", "preview_url": "https://www.youtube.com/embed/7NOSDKb0H8M"}],
@@ -108,7 +123,6 @@ def identify_song():
         mood = data.get('mood', 'focus').lower()
         query = get_search_query(mood)
 
-        # Initialize YouTube client with SSL bypass
         http_unverified = httplib2.Http(disable_ssl_certificate_validation=True)
         youtube = build('youtube', 'v3', developerKey=API_KEY, http=http_unverified)
 
@@ -133,9 +147,6 @@ def identify_song():
 
     except Exception as e:
         error_msg = str(e)
-        print(f"IDENTIFY ERROR: {error_msg}")
-        
-        # If Quota is hit (403/429), return fallback tracks instead of an error
         if "quotaExceeded" in error_msg or "403" in error_msg:
             fallback = FALLBACK_TRACKS.get(mood, FALLBACK_TRACKS["focus"])
             return jsonify({
@@ -143,7 +154,6 @@ def identify_song():
                 "tracks": fallback, 
                 "note": "API Quota Limit reached. Using ZenTune backup selection."
             })
-
         return jsonify({"status": "error", "message": "Search failed"}), 500
 
 @app.route('/stop', methods=['POST'])
@@ -183,23 +193,19 @@ def get_stats(user_id):
     conn = get_db_connection()
     c = conn.cursor()
     try:
-        # Total Sessions
         c.execute("SELECT COUNT(*) FROM history WHERE user_id=%s", (user_id,))
         total_sessions = c.fetchone()[0] or 0
 
-        # Total Time
         c.execute("SELECT SUM(duration) FROM history WHERE user_id=%s", (user_id,))
         total_minutes = c.fetchone()[0] or 0
         hours, remaining_mins = divmod(total_minutes, 60)
         time_display = f"{hours}h {remaining_mins}m"
 
-        # Dominant Mood
         c.execute("""SELECT mood FROM history WHERE user_id=%s AND mood IS NOT NULL 
                      GROUP BY mood ORDER BY COUNT(mood) DESC LIMIT 1""", (user_id,))
         dom_res = c.fetchone()
         dominant_display = mood_names.get(dom_res[0], dom_res[0]) if dom_res else "Initial Scan"
 
-        # Streak (Distinct days active)
         c.execute("SELECT COUNT(DISTINCT timestamp::date) FROM history WHERE user_id=%s", (user_id,))
         streak_row = c.fetchone()
         streak_display = f"{streak_row[0] if streak_row else 0} Days"
