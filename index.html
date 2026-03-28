@@ -142,7 +142,10 @@
         <div class="settings-column">
             <div class="theme-container">
                 Keep playing
-                <label class="switch"><input type="checkbox" id="flowTog" checked><span class="slider"></span></label>
+                <label class="switch">
+    <input type="checkbox" id="flowTog" onchange="localStorage.setItem('flowSetting', this.checked)">
+    <span class="slider"></span>
+</label>
             </div>
             <div class="theme-container">
                 Dark Mode
@@ -221,6 +224,10 @@
         if(!userId) openGuide();
         if(userId) showUser(userId); 
         updateAura(); 
+        const savedFlow = localStorage.getItem('flowSetting');
+            if (savedFlow !== null) {
+                document.getElementById('flowTog').checked = (savedFlow === 'true');
+            }
     };
 
     function onYouTubeIframeAPIReady() {
@@ -231,48 +238,106 @@
         });
     }
 
-    function onPlayerStateChange(event) {
-        const videoData = ytPlayer.getVideoData();
-        const isAd = videoData && videoData.adContent;
+    // Ensure onPlayerStateChange doesn't restart music after session ends
+function onPlayerStateChange(event) {
+    const videoData = ytPlayer.getVideoData();
+    const isAd = videoData && videoData.adContent;
 
-        if (event.data == YT.PlayerState.PLAYING) {
-            if (isAd) {
-                clearInterval(timerInterval);
-                return;
-            }
-            isPaused = false;
-            document.getElementById('playPauseBtn').innerText = "Pause";
-            runTimer();
-        } 
-        else if (event.data == YT.PlayerState.PAUSED) {
-            isPaused = true;
-            document.getElementById('playPauseBtn').innerText = "Play";
+    if (event.data == YT.PlayerState.PLAYING) {
+        // BLOCK: If session is already finished, don't let it play
+        let goalMin = parseInt(document.getElementById('timeGoal').value) || 25;
+        if (seconds >= (goalMin * 60)) {
+            ytPlayer.pauseVideo();
+            return;
+        }
+
+        if (isAd) {
             clearInterval(timerInterval);
-        } 
-        else if (event.data == YT.PlayerState.ENDED) {
-            if(document.getElementById('flowTog').checked) shuffle();
+            return;
+        }
+        isPaused = false;
+        document.getElementById('playPauseBtn').innerText = "Pause";
+        runTimer();
+    } 
+    else if (event.data == YT.PlayerState.PAUSED) {
+        isPaused = true;
+        document.getElementById('playPauseBtn').innerText = "Play";
+        clearInterval(timerInterval);
+    } 
+    else if (event.data == YT.PlayerState.ENDED) {
+        // Only shuffle if the session is NOT finished
+        let goalMin = parseInt(document.getElementById('timeGoal').value) || 25;
+        if(document.getElementById('flowTog').checked && seconds < (goalMin * 60)) {
+            shuffle();
         }
     }
+}
 
-    function runTimer() {
-        clearInterval(timerInterval);
-        document.getElementById('goalBarContainer').style.display = 'block';
+    // --- UPDATED FUNCTIONS ---
+
+function runTimer() {
+    clearInterval(timerInterval);
+    document.getElementById('goalBarContainer').style.display = 'block';
+    
+    // PRIME AUDIO: Wake up the audio context so the browser allows the ping later
+    const ping = document.getElementById('notificationSound');
+    ping.play().then(() => { ping.pause(); ping.currentTime = 0; }).catch(() => {});
+
+    timerInterval = setInterval(() => {
+        if (isPaused || !ytPlayer || ytPlayer.getCurrentTime() === 0) return;
         
-        timerInterval = setInterval(() => {
-            // Ad/Buffering Guard: Don't count if paused or video hasn't actually started
-            if (isPaused || ytPlayer.getCurrentTime() === 0) return;
-            
-            seconds++;
-            let m = Math.floor(seconds / 60), s = (seconds % 60);
-            document.getElementById('sessionTimer').innerText = `SESSION: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            
-            let goalMin = parseInt(document.getElementById('timeGoal').value) || 25;
-            let percent = (seconds / (goalMin * 60)) * 100;
-            document.getElementById('goalBarFill').style.width = Math.min(percent, 100) + "%";
-        }, 1000);
+        seconds++;
+        
+        // Calculate goals
+        let goalMin = parseInt(document.getElementById('timeGoal').value) || 25;
+        let goalSeconds = goalMin * 60;
+        
+        // Update UI
+        let m = Math.floor(seconds / 60), s = (seconds % 60);
+        document.getElementById('sessionTimer').innerText = `SESSION: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+        
+        let percent = (seconds / goalSeconds) * 100;
+        document.getElementById('goalBarFill').style.width = Math.min(percent, 100) + "%";
+
+        // CHECK IF SESSION IS COMPLETE
+        if (seconds >= goalSeconds) {
+            finishSession();
+        }
+    }, 1000);
+}
+
+function finishSession() {
+    clearInterval(timerInterval);
+    isPaused = true;
+
+    // 1. Stop the Music
+    if (ytPlayer) {
+        ytPlayer.pauseVideo();
     }
 
+    // 2. Play the Ping
+    const ping = document.getElementById('notificationSound');
+    ping.play().catch(e => console.log("Audio block:", e));
+
+    // 3. Reset UI & Alert
+    document.getElementById('playPauseBtn').innerText = "Start";
+    alert("Session Complete! Great job staying focused.");
+    
+    // Optional: Auto-save stats here if user is logged in
+    if(userId) {
+        // saveSessionToDatabase(seconds); 
+    }
+}
+
     async function calibrate() {
+        // 1. PRIME AUDIO: This "wakes up" the sound so the browser allows the ping later.
+    const ping = document.getElementById('notificationSound');
+    if (ping) {
+        ping.play().then(() => { 
+            ping.pause(); 
+            ping.currentTime = 0; 
+        }).catch(e => console.log("Audio priming wait:", e));
+    }
         const mood = document.getElementById('moodInput').value;
         const btn = document.getElementById('calBtn');
         btn.innerText = "Analyzing..."; btn.disabled = true;
@@ -394,5 +459,6 @@
 
     function logout() { sessionStorage.removeItem('zentune_id'); location.reload(); }
 </script>
+    <audio id="notificationSound" src="https://actions.google.com/sounds/v1/alarms/beep_short.ogg"></audio>
 </body>
 </html>
