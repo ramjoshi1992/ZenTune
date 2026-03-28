@@ -24,8 +24,18 @@ API_KEY = os.getenv("GOOGLE_API_KEY")
 
 # --- DATABASE LOGIC (PostgreSQL) ---
 def get_db_connection():
-    """Connects to the Render Postgres instance."""
-    return psycopg2.connect(DB_URL)
+    # Get the URL from Render's environment
+    db_url = os.environ.get('DATABASE_URL')
+    
+    # Check if the URL actually exists to avoid the 'NoneType' error
+    if not db_url:
+        raise ValueError("DATABASE_URL is not set in Render Environment Variables!")
+
+    # Fix the 'postgres' vs 'postgresql' mismatch if necessary
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+    
+    return psycopg2.connect(db_url)
 
 def init_db():
     conn = get_db_connection()
