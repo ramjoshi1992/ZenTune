@@ -28,7 +28,6 @@
         
         .nav-group { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-right: auto; }
         
-        /* Updated login styling for vertical stack */
         #loginForm { display: flex; flex-direction: column; gap: 8px; width: 140px; }
         #uidInput, #pwdInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 100%; box-sizing: border-box; font-size: 12px; }
         .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; transition: 0.3s; width: 100%; }
@@ -36,7 +35,6 @@
         .stats-panel { 
             position: fixed; left: 0; top: 0; bottom: 0;
             width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); 
-            /* Increased padding-top to 180px to accommodate the taller login form */
             padding: 180px 20px 20px; display: flex; flex-direction: column; gap: 12px; 
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
             z-index: 900; transform: translateX(-100%); 
@@ -380,7 +378,20 @@
     function openGuide() { document.getElementById('guideOverlay').style.display = 'flex'; }
     function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
     function adjustGoal(a) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value) + a); }
-    function updateAura() { }
+
+    function updateAura() {
+        const mood = document.getElementById('moodInput').value;
+        const colors = {
+            "focus": "#6c63ff", "deepwork": "#4a4a8a", "kickstart": "#ffcc00",
+            "unmotivated": "#ff6600", "happy": "#ffeb3b", "anxious": "#81c784",
+            "stressed": "#4db6ac", "socially-drained": "#90a4ae", 
+            "heartbroken": "#f06292", "sleepy": "#5c6bc0"
+        };
+        const color = colors[mood] || '#6c63ff';
+        document.documentElement.style.setProperty('--aura', color + '4D'); 
+        document.documentElement.style.setProperty('--accent', color);
+    }
+
     function logout() { 
         sessionStorage.removeItem('zentune_id'); 
         location.reload(); 
