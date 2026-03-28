@@ -28,7 +28,9 @@
         
         .nav-group { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-right: auto; }
         
-        #uidInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 120px; }
+        /* Updated login styling to accommodate password field */
+        #loginForm { display: flex; gap: 8px; align-items: center; }
+        #uidInput, #pwdInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 110px; font-size: 12px; }
         .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; transition: 0.3s; }
 
         .stats-panel { 
@@ -100,7 +102,6 @@
         .guide-box { background: var(--card); padding: 30px; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--accent); color: var(--text); }
         .guide-box ul { text-align: left; font-size: 13px; line-height: 1.6; padding-left: 20px; margin: 15px 0; }
 
-        /* Volume Slider Styling */
         .vol-container { display: none; margin-top: 15px; align-items: center; gap: 10px; }
         #volSlider { flex: 1; cursor: pointer; accent-color: var(--accent); }
     </style>
@@ -110,7 +111,7 @@
     <div id="guideOverlay">
         <div class="guide-box">
             <h2 style="color:var(--accent); margin-top:0;">Guide to ZenTune</h2>
-			<p style="font-size:14px; opacity:0.9; margin-bottom: 20px;">
+            <p style="font-size:14px; opacity:0.9; margin-bottom: 20px;">
                 From deep focus to deep sleep — soundscapes for every mood, every moment.</p>
             <ul>
                 <li><b>Mood:</b> Select a category to match your desired state of mind.</li>
@@ -129,6 +130,7 @@
         <div class="nav-group">
             <div id="loginForm">
                 <input type="text" id="uidInput" placeholder="User ID">
+                <input type="password" id="pwdInput" placeholder="Password">
                 <button onclick="login()" class="login-btn">Login</button>
             </div>
             <div id="userGreeting" style="display:none; font-size: 13px; font-weight:bold;">
@@ -320,19 +322,23 @@
         if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(val);
     }
 
+    // Updated Login Function to include Password
     async function login() {
         const id = document.getElementById('uidInput').value.trim();
-        if(!id) return;
+        const pwd = document.getElementById('pwdInput').value.trim();
+        if(!id || !pwd) return;
         try {
             const res = await fetch(`${API_BASE_URL}/auth`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: id })
+                body: JSON.stringify({ user_id: id, password: pwd })
             });
             const data = await res.json();
             if (data.status === 'success') {
                 userId = data.user_id;
                 sessionStorage.setItem('zentune_id', userId);
                 showUser(userId);
+            } else {
+                alert(data.message || "Invalid credentials.");
             }
         } catch (e) { alert("Server is waking up. Try again in 5 seconds."); }
     }
