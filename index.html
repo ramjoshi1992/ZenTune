@@ -25,21 +25,17 @@
 
         .top-nav { position: fixed; top: 0; right: 0; left: 0; height: auto; display: flex; justify-content: flex-end; align-items: flex-start; padding: 20px 30px; gap: 30px; z-index: 1000; pointer-events: none; }
         .nav-group, .settings-column { pointer-events: auto; }
-        
         .nav-group { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-right: auto; }
         
         #uidInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 120px; }
         .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; transition: 0.3s; }
 
         .stats-panel { 
-            position: fixed; left: 0; top: 0; bottom: 0;
-            width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); 
-            padding: 140px 20px 20px; display: flex; flex-direction: column; gap: 12px; 
-            transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
+            position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); 
+            padding: 140px 20px 20px; display: flex; flex-direction: column; gap: 12px; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
             z-index: 900; transform: translateX(-100%); 
         }
         body.show-insights .stats-panel { transform: translateX(0); }
-        body.focus-active .stats-panel { transform: translateX(-100%); }
 
         .stat-card { background: var(--card); padding: 15px; border-radius: var(--radius-lg); border: 1px solid var(--border); }
         .stat-val { font-size: 15px; font-weight: 700; color: var(--accent); }
@@ -48,10 +44,8 @@
         body.show-insights .main-content { margin-left: var(--sidebar-width); }
         
         .card { 
-            background: var(--card); padding: 25px 30px; border-radius: 24px; 
-            width: 100%; max-width: 320px; text-align: center; 
-            border: 1px solid var(--border); position: relative; 
-            box-shadow: 0 0 50px var(--aura); 
+            background: var(--card); padding: 25px 30px; border-radius: 24px; width: 100%; max-width: 320px; text-align: center; 
+            border: 1px solid var(--border); position: relative; box-shadow: 0 0 50px var(--aura); 
             animation: pulseAura var(--pulse-speed) infinite alternate ease-in-out;
             max-height: 90vh; display: flex; flex-direction: column; justify-content: center;
         }
@@ -65,14 +59,8 @@
         .adj-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: var(--radius-md); cursor: pointer; font-size: 18px; font-weight: bold; }
         
         input[type="number"] { text-align: center; width: 100%; height: 40px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-weight: bold; outline: none; -moz-appearance: textfield; }
-        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
         
-        select { 
-            width: 100%; height: 44px; padding: 0 15px; margin: 8px 0; 
-            border-radius: var(--radius-md); border: 1px solid var(--border); 
-            background: var(--input-bg); color: var(--text); outline: none; 
-            cursor: pointer; box-sizing: border-box;
-        }
+        select { width: 100%; height: 44px; padding: 0 15px; margin: 8px 0; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); cursor: pointer; }
 
         .cal-btn { width: 100%; height: 44px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; margin-top: 10px; }
         .control-btns { display: none; gap: 8px; margin-top: 12px; }
@@ -93,14 +81,12 @@
 
         #insightToggleBtn { background: #4a4a8a; color: white; border: none; padding: 8px 15px; border-radius: 20px; cursor: pointer; font-size: 9px; font-weight: 700; height: 32px; transition: 0.3s; width: 120px; }
         
-        .help-fab { position: fixed; bottom: 25px; right: 25px; width: 45px; height: 45px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 2000; transition: 0.3s; }
-        .help-fab:hover { transform: scale(1.1); }
+        .help-fab { position: fixed; bottom: 25px; right: 25px; width: 45px; height: 45px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 2000; }
 
         #guideOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 5000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .guide-box { background: var(--card); padding: 30px; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--accent); color: var(--text); }
-        .guide-box ul { text-align: left; font-size: 13px; line-height: 1.6; padding-left: 20px; margin: 15px 0; }
 
-        /* Volume Slider Styling */
+        /* Volume Slider */
         .vol-container { display: none; margin-top: 15px; align-items: center; gap: 10px; }
         #volSlider { flex: 1; cursor: pointer; accent-color: var(--accent); }
     </style>
@@ -121,7 +107,7 @@
         </div>
     </div>
 
-    <div class="help-fab" onclick="openGuide()">i</div>
+    <div class="help-fab" onclick="openGuide()">!</div>
 
     <nav class="top-nav">
         <div class="nav-group">
@@ -165,7 +151,7 @@
                 <div class="progress-fill" id="goalBarFill"></div>
             </div>
             
-            <select id="moodInput" onchange="updateAura()">
+            <select id="moodInput">
                 <optgroup label="Productivity">
                     <option value="focus">Focus & Concentration</option>
                     <option value="deepwork">Deep Flow Mode</option>
@@ -184,7 +170,7 @@
                 </optgroup>
             </select>
 
-            <div class="goal-adjuster" style="display:flex; gap:5px;">
+            <div style="display:flex; gap:5px;">
                 <button class="adj-btn" onclick="adjustGoal(-1)">-</button>
                 <input type="number" id="timeGoal" value="25" min="1">
                 <button class="adj-btn" onclick="adjustGoal(1)">+</button>
@@ -211,22 +197,16 @@
 
 <script>
     const API_BASE_URL = 'https://zentune.onrender.com';
+    const DEFAULT_TRACKS = [
+        {title: "Lofi Focus (Offline Mode)", preview_url: "jfKfPfyJRdk"},
+        {title: "Deep Flow Alpha Waves", preview_url: "wpS7L_Gf2vI"},
+        {title: "Ambient Zen Study", preview_url: "5qap5aO4i9A"}
+    ];
+
     let ytPlayer, trackPool = [], poolIdx = 0, timerInterval = null, seconds = 0;
-    let isPaused = false, goalReached = false, isFlowing = false;
-    
-    let userId = sessionStorage.getItem('zentune_id'); 
+    let isPaused = false, userId = sessionStorage.getItem('zentune_id'); 
 
-    window.onload = () => { 
-        if(!userId) openGuide();
-        if(userId) showUser(userId); 
-        updateAura(); 
-    };
-
-    function toggleInsights() {
-        document.body.classList.toggle('show-insights');
-        const isShown = document.body.classList.contains('show-insights');
-        document.getElementById('insightToggleBtn').innerText = isShown ? "HIDE INSIGHTS" : "SHOW INSIGHTS";
-    }
+    window.onload = () => { if(userId) showUser(userId); else openGuide(); };
 
     function onYouTubeIframeAPIReady() {
         ytPlayer = new YT.Player('player', {
@@ -237,71 +217,44 @@
     }
 
     function onPlayerStateChange(event) {
-        if (event.data == YT.PlayerState.PLAYING) {
-            isPaused = false;
-            document.getElementById('playPauseBtn').innerText = "Pause";
-            runTimer();
-        } else if (event.data == YT.PlayerState.PAUSED) {
-            isPaused = true;
-            document.getElementById('playPauseBtn').innerText = "Play";
-            clearInterval(timerInterval);
-        } else if (event.data == YT.PlayerState.ENDED) {
-            if(document.getElementById('flowTog').checked) shuffle();
-        }
+        if (event.data == YT.PlayerState.PLAYING) { isPaused = false; document.getElementById('playPauseBtn').innerText = "Pause"; startTimer(); }
+        else if (event.data == YT.PlayerState.PAUSED) { isPaused = true; document.getElementById('playPauseBtn').innerText = "Play"; clearInterval(timerInterval); }
+        else if (event.data == YT.PlayerState.ENDED && document.getElementById('flowTog').checked) shuffle();
     }
 
     async function calibrate() {
-        const mood = document.getElementById('moodInput').value;
         const btn = document.getElementById('calBtn');
-        const originalText = "Calibrate";
+        btn.innerText = "Analyzing..."; btn.disabled = true;
         
-        btn.innerText = "Analyzing..."; 
-        btn.disabled = true;
-
         try {
             const res = await fetch(`${API_BASE_URL}/identify`, {
                 method:'POST', headers:{'Content-Type':'application/json'}, 
-                body:JSON.stringify({mood:mood, user_id: userId || "guest"})
+                body:JSON.stringify({mood: document.getElementById('moodInput').value, user_id: userId || "guest"})
             });
             const data = await res.json();
-            if(data.status==='success' && data.tracks.length > 0) { 
-                trackPool=data.tracks; poolIdx=0; 
-                playTrack(0);
-                document.getElementById('result').style.display='block';
-                document.getElementById('sessionControls').style.display='flex';
-                document.getElementById('volContainer').style.display='flex';
-                resetSessionState(); runTimer();
-            }
-        } catch(e) { 
-            btn.innerText = "Waking server...";
-            setTimeout(() => calibrate(), 3000); 
-            return;
+            trackPool = (data.tracks && data.tracks.length > 0) ? data.tracks : DEFAULT_TRACKS;
+        } catch(e) {
+            console.warn("API Unavailable, using defaults.");
+            trackPool = DEFAULT_TRACKS;
         }
-        btn.innerText = originalText; btn.disabled = false;
+
+        playTrack(0);
+        document.getElementById('result').style.display='block';
+        document.getElementById('sessionControls').style.display='flex';
+        document.getElementById('volContainer').style.display='flex';
+        btn.innerText = "Calibrate"; btn.disabled = false;
     }
 
     function playTrack(idx) {
         poolIdx = idx;
-        let vidId = trackPool[idx].preview_url.includes('v=') ? trackPool[idx].preview_url.split('v=')[1].split('&')[0] : trackPool[idx].preview_url.split('/').pop();
+        const url = trackPool[idx].preview_url;
+        let vidId = url.includes('v=') ? url.split('v=')[1].split('&')[0] : (url.includes('/') ? url.split('/').pop() : url);
         ytPlayer.loadVideoById(vidId);
         document.getElementById('trackTitle').innerText = trackPool[idx].title;
     }
 
-    function togglePlayPause() {
-        if (isPaused) {
-            ytPlayer.playVideo();
-        } else {
-            ytPlayer.pauseVideo();
-        }
-    }
-
-    function shuffle() {
-        if (trackPool.length > 0) {
-            poolIdx = (poolIdx + 1) % trackPool.length;
-            playTrack(poolIdx);
-        }
-    }
-
+    function togglePlayPause() { isPaused ? ytPlayer.playVideo() : ytPlayer.pauseVideo(); }
+    function shuffle() { poolIdx = (poolIdx + 1) % trackPool.length; playTrack(poolIdx); }
     function stopSession() {
         ytPlayer.stopVideo();
         clearInterval(timerInterval);
@@ -310,73 +263,54 @@
         document.getElementById('volContainer').style.display = 'none';
         document.getElementById('trackTitle').innerText = "";
         document.getElementById('sessionTimer').innerText = "SESSION: 00:00";
-        document.getElementById('goalBarFill').style.width = "0%";
         seconds = 0;
     }
 
-    function changeVolume(val) {
-        if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(val);
+    function changeVolume(v) { if(ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(v); }
+    
+    function startTimer() { 
+        clearInterval(timerInterval);
+        document.getElementById('goalBarContainer').style.display = 'block';
+        timerInterval = setInterval(() => {
+            if(!isPaused) {
+                seconds++;
+                let m = Math.floor(seconds/60), s = seconds%60;
+                document.getElementById('sessionTimer').innerText = `SESSION: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+                let goal = parseInt(document.getElementById('timeGoal').value) * 60;
+                document.getElementById('goalBarFill').style.width = Math.min((seconds/goal)*100, 100) + "%";
+            }
+        }, 1000);
     }
 
+    function adjustGoal(a) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value) + a); }
+    function toggleInsights() { document.body.classList.toggle('show-insights'); }
+    function openGuide() { document.getElementById('guideOverlay').style.display='flex'; }
+    function closeGuide() { document.getElementById('guideOverlay').style.display='none'; }
+    function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
+    
     async function login() {
         const id = document.getElementById('uidInput').value.trim();
         if(!id) return;
         try {
-            const res = await fetch(`${API_BASE_URL}/auth`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: id })
-            });
+            const res = await fetch(`${API_BASE_URL}/auth`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ user_id: id }) });
             const data = await res.json();
-            if (data.status === 'success') {
-                userId = data.user_id;
-                sessionStorage.setItem('zentune_id', userId);
-                showUser(userId);
-            }
-        } catch (e) { alert("Server is waking up. Try again in 5 seconds."); }
+            if (data.status === 'success') { userId = data.user_id; sessionStorage.setItem('zentune_id', userId); showUser(userId); }
+        } catch (e) { alert("Server warming up..."); }
     }
 
     function showUser(id) { 
         document.getElementById('loginForm').style.display='none'; 
         document.getElementById('userGreeting').style.display='block'; 
         document.getElementById('userLabel').innerText = `Welcome, ${id}`; 
-        fetchStats(); 
+        fetch(`${API_BASE_URL}/stats/${id}`).then(r => r.json()).then(d => {
+            document.getElementById('sTotal').innerText = d.total || 0;
+            document.getElementById('sTime').innerText = d.total_time || "0h 0m";
+            document.getElementById('sMood').innerText = d.dominant || "Initial Scan";
+            document.getElementById('sStreak').innerText = d.streak || "0 Days";
+        });
     }
 
-    async function fetchStats() {
-        if(!userId) return;
-        try {
-            const res = await fetch(`${API_BASE_URL}/stats/${userId}`);
-            const d = await res.json();
-            document.getElementById('sTotal').innerText = d.total ?? 0; 
-            document.getElementById('sTime').innerText = d.total_time ?? "0h 0m";
-            document.getElementById('sMood').innerText = d.dominant ?? "Initial Scan";
-            document.getElementById('sStreak').innerText = d.streak ?? "0 Days";
-        } catch(e) { console.error("Stats Error:", e); }
-    }
-
-    function runTimer() {
-        clearInterval(timerInterval);
-        document.getElementById('goalBarContainer').style.display = 'block';
-        timerInterval = setInterval(() => {
-            if (isPaused) return;
-            seconds++;
-            let m = Math.floor(seconds / 60), s = (seconds % 60);
-            document.getElementById('sessionTimer').innerText = `SESSION: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            let percent = (seconds / (parseInt(document.getElementById('timeGoal').value) * 60)) * 100;
-            document.getElementById('goalBarFill').style.width = Math.min(percent, 100) + "%";
-        }, 1000);
-    }
-
-    function resetSessionState() { clearInterval(timerInterval); seconds = 0; }
-    function closeGuide() { document.getElementById('guideOverlay').style.display = 'none'; }
-    function openGuide() { document.getElementById('guideOverlay').style.display = 'flex'; }
-    function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
-    function adjustGoal(a) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value) + a); }
-    function updateAura() { }
-    function logout() { 
-        sessionStorage.removeItem('zentune_id'); 
-        location.reload(); 
-    }
+    function logout() { sessionStorage.removeItem('zentune_id'); location.reload(); }
 </script>
 </body>
 </html>
