@@ -215,21 +215,13 @@
 <script>
     const API_BASE_URL = 'https://zentune.onrender.com';
     let ytPlayer, trackPool = [], poolIdx = 0, timerInterval = null, seconds = 0;
-    let isPaused = false, goalReached = false, isFlowing = false;
-    
-    let userId = sessionStorage.getItem('zentune_id'); 
+    let isPaused = false, userId = sessionStorage.getItem('zentune_id'); 
 
     window.onload = () => { 
         if(!userId) openGuide();
         if(userId) showUser(userId); 
         updateAura(); 
     };
-
-    function toggleInsights() {
-        document.body.classList.toggle('show-insights');
-        const isShown = document.body.classList.contains('show-insights');
-        document.getElementById('insightToggleBtn').innerText = isShown ? "HIDE INSIGHTS" : "SHOW INSIGHTS";
-    }
 
     function onYouTubeIframeAPIReady() {
         ytPlayer = new YT.Player('player', {
@@ -240,39 +232,50 @@
     }
 
     function onPlayerStateChange(event) {
-    const videoData = ytPlayer.getVideoData();
-    // Ad Guard: Check if the current content is flagged as an ad
-    const isAd = videoData && videoData.adContent;
+        const videoData = ytPlayer.getVideoData();
+        const isAd = videoData && videoData.adContent;
 
-    if (event.data == YT.PlayerState.PLAYING) {
-        // If it's an ad, we force the timer to stay cleared/paused
-        if (isAd) {
+        if (event.data == YT.PlayerState.PLAYING) {
+            if (isAd) {
+                clearInterval(timerInterval);
+                return;
+            }
+            isPaused = false;
+            document.getElementById('playPauseBtn').innerText = "Pause";
+            runTimer();
+        } 
+        else if (event.data == YT.PlayerState.PAUSED) {
+            isPaused = true;
+            document.getElementById('playPauseBtn').innerText = "Play";
             clearInterval(timerInterval);
-            return;
+        } 
+        else if (event.data == YT.PlayerState.ENDED) {
+            if(document.getElementById('flowTog').checked) shuffle();
         }
-        
-        isPaused = false;
-        document.getElementById('playPauseBtn').innerText = "Pause";
-        runTimer();
-    } 
-    else if (event.data == YT.PlayerState.PAUSED) {
-        isPaused = true;
-        document.getElementById('playPauseBtn').innerText = "Play";
-        clearInterval(timerInterval);
-    } 
-    else if (event.data == YT.PlayerState.ENDED) {
-        // Retaining your existing Flow Mode feature
-        if(document.getElementById('flowTog').checked) shuffle();
     }
-}
+
+    function runTimer() {
+        clearInterval(timerInterval);
+        document.getElementById('goalBarContainer').style.display = 'block';
+        
+        timerInterval = setInterval(() => {
+            // Ad/Buffering Guard: Don't count if paused or video hasn't actually started
+            if (isPaused || ytPlayer.getCurrentTime() === 0) return;
+            
+            seconds++;
+            let m = Math.floor(seconds / 60), s = (seconds % 60);
+            document.getElementById('sessionTimer').innerText = `SESSION: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+            
+            let goalMin = parseInt(document.getElementById('timeGoal').value) || 25;
+            let percent = (seconds / (goalMin * 60)) * 100;
+            document.getElementById('goalBarFill').style.width = Math.min(percent, 100) + "%";
+        }, 1000);
+    }
 
     async function calibrate() {
         const mood = document.getElementById('moodInput').value;
         const btn = document.getElementById('calBtn');
-        const originalText = "Calibrate";
-        
-        btn.innerText = "Analyzing..."; 
-        btn.disabled = true;
+        btn.innerText = "Analyzing..."; btn.disabled = true;
 
         try {
             const res = await fetch(`${API_BASE_URL}/identify`, {
@@ -286,14 +289,15 @@
                 document.getElementById('result').style.display='block';
                 document.getElementById('sessionControls').style.display='flex';
                 document.getElementById('volContainer').style.display='flex';
-                resetSessionState(); runTimer();
+                resetSessionState(); 
+                // runTimer is triggered by onPlayerStateChange PLAYING
             }
         } catch(e) { 
             btn.innerText = "Waking server...";
             setTimeout(() => calibrate(), 3000); 
             return;
         }
-        btn.innerText = originalText; btn.disabled = false;
+        btn.innerText = "Calibrate"; btn.disabled = false;
     }
 
     function playTrack(idx) {
@@ -304,11 +308,7 @@
     }
 
     function togglePlayPause() {
-        if (isPaused) {
-            ytPlayer.playVideo();
-        } else {
-            ytPlayer.pauseVideo();
-        }
+        if (isPaused) ytPlayer.playVideo(); else ytPlayer.pauseVideo();
     }
 
     function shuffle() {
@@ -330,9 +330,7 @@
         seconds = 0;
     }
 
-    function changeVolume(val) {
-        if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(val);
-    }
+    function changeVolume(val) { if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(val); }
 
     async function login() {
         const id = document.getElementById('uidInput').value.trim();
@@ -348,10 +346,8 @@
                 userId = data.user_id;
                 sessionStorage.setItem('zentune_id', userId);
                 showUser(userId);
-            } else {
-                alert(data.message || "Invalid credentials.");
-            }
-        } catch (e) { alert("Server is waking up. Try again in 5 seconds."); }
+            } else { alert(data.message || "Invalid credentials."); }
+        } catch (e) { alert("Server is waking up."); }
     }
 
     function showUser(id) { 
@@ -373,20 +369,11 @@
         } catch(e) { console.error("Stats Error:", e); }
     }
 
-    function runTimer() {
-    clearInterval(timerInterval);
-    document.getElementById('goalBarContainer').style.display = 'block';
-    
-    timerInterval = setInterval(() => {
-        // Validation: If player is at 0 or buffering, don't count seconds yet
-        if (isPaused || ytPlayer.getCurrentTime() === 0) return;
-        
-        seconds++;
-        // ... rest of your existing timer logic
-    }, 1000);
-}
-
     function resetSessionState() { clearInterval(timerInterval); seconds = 0; }
+    function toggleInsights() {
+        document.body.classList.toggle('show-insights');
+        document.getElementById('insightToggleBtn').innerText = document.body.classList.contains('show-insights') ? "HIDE INSIGHTS" : "SHOW INSIGHTS";
+    }
     function closeGuide() { document.getElementById('guideOverlay').style.display = 'none'; }
     function openGuide() { document.getElementById('guideOverlay').style.display = 'flex'; }
     function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
@@ -405,10 +392,7 @@
         document.documentElement.style.setProperty('--accent', color);
     }
 
-    function logout() { 
-        sessionStorage.removeItem('zentune_id'); 
-        location.reload(); 
-    }
+    function logout() { sessionStorage.removeItem('zentune_id'); location.reload(); }
 </script>
 </body>
 </html>
