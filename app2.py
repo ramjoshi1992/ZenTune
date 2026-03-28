@@ -3,6 +3,7 @@ import ssl
 import httplib2
 import traceback
 import psycopg2
+import random  # Added for randomization
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
@@ -14,21 +15,16 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "https://ramjoshi1992.github.io"}})
+# Updated CORS to be more flexible for testing while keeping your domain
+CORS(app, resources={r"/*": {"origins": ["https://ramjoshi1992.github.io", "http://127.0.0.1:5500"]}})
 
 # --- DATABASE LOGIC (PostgreSQL) ---
 def get_db_connection():
-    # Try both ways Render stores environment variables
     db_url = os.environ.get('DATABASE_URL') or os.getenv('DATABASE_URL')
-    
     if not db_url:
-        print("CRITICAL ERROR: DATABASE_URL is missing!")
         return None
-
-    # Essential fix for psycopg2/SQLAlchemy compatibility
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
-    
     try:
         return psycopg2.connect(db_url)
     except Exception as e:
@@ -37,13 +33,9 @@ def get_db_connection():
 
 def init_db():
     conn = get_db_connection()
-    if conn is None:
-        print("Database connection failed. Skipping initialization.")
-        return
-        
+    if conn is None: return
     try:
         cur = conn.cursor()
-        # Create users table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 user_id TEXT PRIMARY KEY,
@@ -55,8 +47,6 @@ def init_db():
                 last_session_date DATE
             )
         ''')
-        
-        # Create history table (Crucial for your /stop and /stats routes!)
         cur.execute('''
             CREATE TABLE IF NOT EXISTS history (
                 id SERIAL PRIMARY KEY,
@@ -66,13 +56,8 @@ def init_db():
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        
-        # Self-fix column
-        cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;")
-        
         conn.commit()
         cur.close()
-        print("Database initialized and migrated successfully.")
     except Exception as e:
         print(f"Error during init_db: {e}")
     finally:
@@ -101,30 +86,23 @@ def authenticate():
     data = request.json
     user_id = data.get('user_id', '').strip()
     password = data.get('password', '').strip()
-    
     if not user_id or not password:
         return jsonify({"status": "error", "message": "ID and Password required"}), 400
-    
     conn = get_db_connection()
-    if not conn:
-        return jsonify({"status": "error", "message": "Database connection failed"}), 500
-        
+    if not conn: return jsonify({"status": "error", "message": "Database connection failed"}), 500
     try:
         c = conn.cursor()
         c.execute('SELECT user_id, password_hash FROM users WHERE user_id = %s', (user_id,))
         user = c.fetchone()
-        
         if not user:
             hashed_pw = generate_password_hash(password)
             c.execute('INSERT INTO users (user_id, password_hash) VALUES (%s, %s)', (user_id, hashed_pw))
             conn.commit()
             return jsonify({"status": "success", "message": "Account created!", "user_id": user_id})
-        
         if check_password_hash(user[1], password):
             return jsonify({"status": "success", "message": "Welcome back!", "user_id": user_id})
         else:
             return jsonify({"status": "error", "message": "Invalid password"}), 401
-            
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
     finally:
@@ -133,7 +111,7 @@ def authenticate():
 @app.route('/identify', methods=['POST'])
 def identify_song():
     FALLBACK_TRACKS = {
-        "focus": [{"title": "Lofi Study Beats (Backup)", "artist": "ZenTune", "preview_url": "https://www.youtube.com/embed/jfKfPfyJRdk"}]
+        "focus": [{"title": "Lofi Study Beats (Backup)", "artist": "ZenTune", "preview_url": "https://www.youtube.com/watch?v=jfKfPfyJRdk"}]
     }
 
     try:
@@ -145,22 +123,35 @@ def identify_song():
         http_unverified = httplib2.Http(disable_ssl_certificate_validation=True)
         youtube = build('youtube', 'v3', developerKey=api_key, http=http_unverified)
 
+        # Added randomness: Request more results and shuffle them locally
         search_req = youtube.search().list(
-            q=query, part="snippet", type="video", videoCategoryId="10", 
-            videoEmbeddable="true", maxResults=3
+            q=query, 
+            part="snippet", 
+            type="video", 
+            videoCategoryId="10", 
+            videoEmbeddable="true", 
+            maxResults=15  # Increased from 3 to 15 for variety
         )
         res = search_req.execute()
 
+        all_items = res.get('items', [])
+        random.shuffle(all_items) # Randomize the order of the 15 results
+        
+        # Take the top 5 after shuffling
         tracks = [{
             "title": i['snippet']['title'],
             "artist": i['snippet']['channelTitle'],
-            "preview_url": f"https://www.youtube.com/embed/{i['id']['videoId']}",
+            "preview_url": f"https://www.youtube.com/watch?v={i['id']['videoId']}", # Changed to watch URL for JS compatibility
             "external_link": f"https://www.youtube.com/watch?v={i['id']['videoId']}"
-        } for i in res.get('items', [])]
+        } for i in all_items[:5]]
+
+        if not tracks:
+            return jsonify({"status": "success", "tracks": FALLBACK_TRACKS["focus"]})
 
         return jsonify({"status": "success", "tracks": tracks})
     except Exception as e:
-        return jsonify({"status": "success", "tracks": FALLBACK_TRACKS["focus"], "note": str(e)})
+        print(f"Error in identify_song: {traceback.format_exc()}")
+        return jsonify({"status": "success", "tracks": FALLBACK_TRACKS["focus"], "note": "API error, using fallback"})
 
 @app.route('/stop', methods=['POST'])
 def stop_session():
@@ -169,10 +160,8 @@ def stop_session():
     duration_seconds = data.get('duration', 0)
     duration_minutes = round(duration_seconds / 60)
     mood = data.get('mood')
-
     conn = get_db_connection()
     if not conn: return jsonify({"status": "error", "message": "DB Down"}), 500
-    
     try:
         c = conn.cursor()
         c.execute('INSERT INTO history (user_id, mood, duration) VALUES (%s, %s, %s)', 
@@ -188,19 +177,32 @@ def stop_session():
 def get_stats(user_id):
     conn = get_db_connection()
     if not conn: return jsonify({"status": "error", "message": "DB Down"}), 500
-    
     try:
         c = conn.cursor()
-        c.execute("SELECT COUNT(*) FROM history WHERE user_id=%s", (user_id,))
-        total = c.fetchone()[0] or 0
-        return jsonify({"total": total, "total_time": "0h 0m", "dominant": "None", "streak": "0 Days"})
+        c.execute("SELECT COUNT(*), SUM(duration) FROM history WHERE user_id=%s", (user_id,))
+        row = c.fetchone()
+        total = row[0] or 0
+        total_mins = row[1] or 0
+        h = total_mins // 60
+        m = total_mins % 60
+        
+        # Get dominant mood
+        c.execute("SELECT mood FROM history WHERE user_id=%s GROUP BY mood ORDER BY COUNT(*) DESC LIMIT 1", (user_id,))
+        mood_row = c.fetchone()
+        dominant = mood_row[0].capitalize() if mood_row else "Initial Scan"
+
+        return jsonify({
+            "total": total, 
+            "total_time": f"{h}h {m}m", 
+            "dominant": dominant, 
+            "streak": "0 Days" # Streak logic can be added later
+        })
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)}), 500
     finally:
         conn.close()
 
 if __name__ == '__main__':
-    # Initialize DB before starting server
     init_db()
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
