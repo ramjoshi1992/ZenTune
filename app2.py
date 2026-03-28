@@ -18,10 +18,6 @@ app = Flask(__name__)
 # Secure CORS for your GitHub Pages frontend
 CORS(app, resources={r"/*": {"origins": "https://ramjoshi1992.github.io"}})
 
-# Pulls the 'Internal Database URL' from your Render Environment Variables
-DB_URL = os.getenv("DATABASE_URL")
-API_KEY = os.getenv("GOOGLE_API_KEY")
-
 # --- DATABASE LOGIC (PostgreSQL) ---
 def get_db_connection():
     # 1. Fetch the URL from Render's environment
@@ -70,9 +66,6 @@ def init_db():
     cur.close()
     conn.close()
     print("Database initialized and migrated.")
-
-# Run initialization immediately
-init_db()
 
 # --- HELPER ---
 def get_search_query(mood):
@@ -141,7 +134,7 @@ def identify_song():
         query = get_search_query(mood)
 
         http_unverified = httplib2.Http(disable_ssl_certificate_validation=True)
-        youtube = build('youtube', 'v3', developerKey=API_KEY, http=http_unverified)
+        youtube = build('youtube', 'v3', developerKey=os.getenv("GOOGLE_API_KEY"), http=http_unverified)
 
         search_req = youtube.search().list(
             q=query, 
@@ -236,7 +229,15 @@ def get_stats(user_id):
     finally:
         c.close()
         conn.close()
-
+        
 if __name__ == '__main__':
+    # Initialize the database ONLY when the app starts up properly
+    try:
+        print("Starting initialization...")
+        init_db()
+    except Exception as e:
+        print(f"Startup Database Error: {e}")
+
+    # Start the Flask app
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
