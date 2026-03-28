@@ -240,18 +240,31 @@
     }
 
     function onPlayerStateChange(event) {
-        if (event.data == YT.PlayerState.PLAYING) {
-            isPaused = false;
-            document.getElementById('playPauseBtn').innerText = "Pause";
-            runTimer();
-        } else if (event.data == YT.PlayerState.PAUSED) {
-            isPaused = true;
-            document.getElementById('playPauseBtn').innerText = "Play";
+    const videoData = ytPlayer.getVideoData();
+    // Ad Guard: Check if the current content is flagged as an ad
+    const isAd = videoData && videoData.adContent;
+
+    if (event.data == YT.PlayerState.PLAYING) {
+        // If it's an ad, we force the timer to stay cleared/paused
+        if (isAd) {
             clearInterval(timerInterval);
-        } else if (event.data == YT.PlayerState.ENDED) {
-            if(document.getElementById('flowTog').checked) shuffle();
+            return;
         }
+        
+        isPaused = false;
+        document.getElementById('playPauseBtn').innerText = "Pause";
+        runTimer();
+    } 
+    else if (event.data == YT.PlayerState.PAUSED) {
+        isPaused = true;
+        document.getElementById('playPauseBtn').innerText = "Play";
+        clearInterval(timerInterval);
+    } 
+    else if (event.data == YT.PlayerState.ENDED) {
+        // Retaining your existing Flow Mode feature
+        if(document.getElementById('flowTog').checked) shuffle();
     }
+}
 
     async function calibrate() {
         const mood = document.getElementById('moodInput').value;
@@ -361,17 +374,17 @@
     }
 
     function runTimer() {
-        clearInterval(timerInterval);
-        document.getElementById('goalBarContainer').style.display = 'block';
-        timerInterval = setInterval(() => {
-            if (isPaused) return;
-            seconds++;
-            let m = Math.floor(seconds / 60), s = (seconds % 60);
-            document.getElementById('sessionTimer').innerText = `SESSION: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            let percent = (seconds / (parseInt(document.getElementById('timeGoal').value) * 60)) * 100;
-            document.getElementById('goalBarFill').style.width = Math.min(percent, 100) + "%";
-        }, 1000);
-    }
+    clearInterval(timerInterval);
+    document.getElementById('goalBarContainer').style.display = 'block';
+    
+    timerInterval = setInterval(() => {
+        // Validation: If player is at 0 or buffering, don't count seconds yet
+        if (isPaused || ytPlayer.getCurrentTime() === 0) return;
+        
+        seconds++;
+        // ... rest of your existing timer logic
+    }, 1000);
+}
 
     function resetSessionState() { clearInterval(timerInterval); seconds = 0; }
     function closeGuide() { document.getElementById('guideOverlay').style.display = 'none'; }
