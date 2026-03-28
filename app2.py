@@ -28,31 +28,29 @@ def get_db_connection():
     return psycopg2.connect(DB_URL)
 
 def init_db():
-    """Recreates tables if they don't exist in the Postgres instance."""
-    conn = None
-    try:
-        conn = get_db_connection()
-        c = conn.cursor()
-        # Updated users table to include password_hash
-        c.execute('''CREATE TABLE IF NOT EXISTS users (
-            user_id TEXT PRIMARY KEY, 
+    conn = get_db_connection()
+    cur = conn.cursor()
+    
+    # 1. Create the table if it doesn't exist at all
+    cur.execute('''
+        CREATE TABLE IF NOT EXISTS users (
+            user_id TEXT PRIMARY KEY,
             password_hash TEXT,
-            last_goal INTEGER DEFAULT 25
-        )''')
-        c.execute('''CREATE TABLE IF NOT EXISTS history 
-                     (id SERIAL PRIMARY KEY, 
-                      user_id TEXT, 
-                      mood TEXT, 
-                      duration INTEGER DEFAULT 0,
-                      timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
-        conn.commit()
-        c.close()
-        print("Postgres Database Initialized Successfully")
-    except Exception as e:
-        print(f"Database Init Error: {e}")
-    finally:
-        if conn:
-            conn.close()
+            total_sessions INTEGER DEFAULT 0,
+            total_time TEXT DEFAULT '0h 0m',
+            dominant_mood TEXT DEFAULT 'None',
+            streak INTEGER DEFAULT 0,
+            last_session_date DATE
+        )
+    ''')
+    
+    # 2. THE SELF-FIX: This adds the column if it's missing from an old table
+    cur.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS password_hash TEXT;")
+    
+    conn.commit()
+    cur.close()
+    conn.close()
+    print("Database initialized and migrated.")
 
 # Run initialization immediately
 init_db()
