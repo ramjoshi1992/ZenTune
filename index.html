@@ -244,7 +244,7 @@
         if (event.data == YT.PlayerState.PLAYING) {
             isPaused = false;
             document.getElementById('playPauseBtn').innerText = "Pause";
-            runTimer();
+            runTimer(); // Timer starts only when the player state changes to PLAYING
         } else if (event.data == YT.PlayerState.PAUSED) {
             isPaused = true;
             document.getElementById('playPauseBtn').innerText = "Play";
@@ -274,7 +274,7 @@
                 document.getElementById('result').style.display='block';
                 document.getElementById('sessionControls').style.display='flex';
                 document.getElementById('volContainer').style.display='flex';
-                resetSessionState(); runTimer();
+                resetSessionState(); // runTimer() removed from here to wait for actual playback
             }
         } catch(e) { 
             btn.innerText = "Waking server...";
@@ -313,7 +313,6 @@
         ytPlayer.stopVideo();
         clearInterval(timerInterval);
 
-        // Save session if logged in
         if(userId) {
             try {
                 await fetch(`${API_BASE_URL}/stop`, {
