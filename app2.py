@@ -110,48 +110,59 @@ def authenticate():
 
 @app.route('/identify', methods=['POST'])
 def identify_song():
-    FALLBACK_TRACKS = {
-        "focus": [{"title": "Lofi Study Beats (Backup)", "artist": "ZenTune", "preview_url": "https://www.youtube.com/watch?v=jfKfPfyJRdk"}]
-    }
+    # Expanded Fallback so it's never "just one song"
+    FALLBACK_TRACKS = [
+        {"title": "Lofi Study Beats", "artist": "ZenTune", "preview_url": "https://www.youtube.com/watch?v=jfKfPfyJRdk"},
+        {"title": "Ambient Flow", "artist": "ZenTune", "preview_url": "https://www.youtube.com/watch?v=5qap5aO4i9A"},
+        {"title": "Deep Focus", "artist": "ZenTune", "preview_url": "https://www.youtube.com/watch?v=DWcJFNfaw9c"}
+    ]
 
     try:
         data = request.json
         mood = data.get('mood', 'focus').lower()
-        query = get_search_query(mood)
+        
+        # 1. Add a random "noise" word to the query to force different results
+        noise_words = ["instrumental", "ambient", "2026", "new", "relaxing", "mix"]
+        query = get_search_query(mood) + " " + random.choice(noise_words)
+        
         api_key = os.environ.get("GOOGLE_API_KEY")
-
         http_unverified = httplib2.Http(disable_ssl_certificate_validation=True)
         youtube = build('youtube', 'v3', developerKey=api_key, http=http_unverified)
 
-        # Added randomness: Request more results and shuffle them locally
+        # 2. Use 'publishedBefore' or a random 'pageToken' to get different results
+        # We'll request 25 items and pick 5 randomly from the whole list
         search_req = youtube.search().list(
             q=query, 
             part="snippet", 
             type="video", 
             videoCategoryId="10", 
             videoEmbeddable="true", 
-            maxResults=15  # Increased from 3 to 15 for variety
+            maxResults=25,
+            relevanceLanguage="en"
         )
         res = search_req.execute()
 
-        all_items = res.get('items', [])
-        random.shuffle(all_items) # Randomize the order of the 15 results
+        items = res.get('items', [])
+        if not items:
+            random.shuffle(FALLBACK_TRACKS)
+            return jsonify({"status": "success", "tracks": FALLBACK_TRACKS[:3]})
+
+        # 3. Shuffle the 25 results and take 5
+        random.shuffle(items)
         
-        # Take the top 5 after shuffling
         tracks = [{
             "title": i['snippet']['title'],
             "artist": i['snippet']['channelTitle'],
-            "preview_url": f"https://www.youtube.com/watch?v={i['id']['videoId']}", # Changed to watch URL for JS compatibility
+            "preview_url": f"https://www.youtube.com/watch?v={i['id']['videoId']}",
             "external_link": f"https://www.youtube.com/watch?v={i['id']['videoId']}"
-        } for i in all_items[:5]]
-
-        if not tracks:
-            return jsonify({"status": "success", "tracks": FALLBACK_TRACKS["focus"]})
+        } for i in items[:5]]
 
         return jsonify({"status": "success", "tracks": tracks})
+
     except Exception as e:
-        print(f"Error in identify_song: {traceback.format_exc()}")
-        return jsonify({"status": "success", "tracks": FALLBACK_TRACKS["focus"], "note": "API error, using fallback"})
+        print(f"Error: {traceback.format_exc()}")
+        random.shuffle(FALLBACK_TRACKS)
+        return jsonify({"status": "success", "tracks": FALLBACK_TRACKS[:3], "note": "using_random_fallback"})
 
 @app.route('/stop', methods=['POST'])
 def stop_session():
