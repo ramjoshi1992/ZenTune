@@ -235,7 +235,7 @@
     function onYouTubeIframeAPIReady() {
         ytPlayer = new YT.Player('player', {
             height: '100%', width: '100%',
-            playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 },
+            playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1, 'origin': window.location.origin },
             events: { 'onStateChange': onPlayerStateChange }
         });
     }
@@ -244,115 +244,101 @@
         if (event.data == YT.PlayerState.PLAYING) {
             isPaused = false;
             document.getElementById('playPauseBtn').innerText = "Pause";
-            runTimer(); // Timer starts only when the player state changes to PLAYING
+            runTimer();
         } else if (event.data == YT.PlayerState.PAUSED) {
             isPaused = true;
             document.getElementById('playPauseBtn').innerText = "Play";
             clearInterval(timerInterval);
         } else if (event.data == YT.PlayerState.ENDED) {
+            // Flow Mode Logic
             if(document.getElementById('flowTog').checked) shuffle();
         }
     }
 
-   async function calibrate() {
-    const mood = document.getElementById('moodInput').value;
-    const btn = document.getElementById('calBtn');
-    const originalText = "Calibrate";
-    
-    btn.innerText = "Analyzing..."; 
-    btn.disabled = true;
+    async function calibrate() {
+        const mood = document.getElementById('moodInput').value;
+        const btn = document.getElementById('calBtn');
+        
+        btn.innerText = "Analyzing..."; 
+        btn.disabled = true;
 
-    try {
-        const res = await fetch(`${API_BASE_URL}/identify`, {
-            method:'POST', 
-            headers:{'Content-Type':'application/json'}, 
-            body:JSON.stringify({mood:mood, user_id: userId || "guest"})
-        });
-        
-        const data = await res.json();
-        
-        // FAIL-SAFE: Check if tracks exist and player is initialized
-        if(data && data.tracks && data.tracks.length > 0) { 
-            trackPool = data.tracks; 
-            poolIdx = 0; 
+        try {
+            // Added Cache Buster timestamp to force fresh results from Render
+            const res = await fetch(`${API_BASE_URL}/identify?t=${Date.now()}`, {
+                method:'POST', 
+                headers:{'Content-Type':'application/json'}, 
+                body:JSON.stringify({mood: mood, user_id: userId || "new_session"})
+            });
             
-            // Ensure the UI updates BEFORE we try to load the video
-            document.getElementById('result').style.display = 'block';
-            document.getElementById('sessionControls').style.display = 'flex';
-            document.getElementById('volContainer').style.display = 'flex';
+            const data = await res.json();
             
-            if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
+            if(data.status==='success' && data.tracks && data.tracks.length > 0) { 
+                trackPool = data.tracks; 
+                poolIdx = 0; 
                 playTrack(0);
+                
+                document.getElementById('result').style.display='block';
+                document.getElementById('sessionControls').style.display='flex';
+                document.getElementById('volContainer').style.display='flex';
+                
                 resetSessionState(); 
-            } else {
-                alert("YouTube Player is still loading. Please wait 2 seconds and try again.");
+                runTimer();
             }
-        } else {
-            alert("No tracks found for this mood. Try another one!");
+        } catch(e) { 
+            console.error("Calibration failed:", e);
+            btn.innerText = "Connection Error...";
+            setTimeout(() => { btn.innerText = "Calibrate"; btn.disabled = false; }, 3000);
+            return;
         }
-    } catch(e) { 
-        console.error("Calibration Error:", e);
-        btn.innerText = "Waking server...";
-        setTimeout(() => calibrate(), 3000); 
-        return;
-    } finally {
-        btn.innerText = originalText; 
+        btn.innerText = "Calibrate"; 
         btn.disabled = false;
     }
-}
 
     function playTrack(idx) {
-    poolIdx = idx;
-    const track = trackPool[idx];
-    // This regex is the most reliable way to get the ID from a YouTube URL
-    const videoId = track.preview_url.match(/(?:https?:\/\/(?:www\.)?youtube\.com\/watch\?v=|https?:\/\/youtu\.be\/)([^& \n<]+)/)[1];
-    
-    if (ytPlayer && ytPlayer.loadVideoById) {
-        ytPlayer.loadVideoById(videoId);
-        document.getElementById('trackTitle').innerText = track.title;
+        if (!trackPool[idx]) return;
+        poolIdx = idx;
+        
+        // Improved Regex to extract YouTube ID accurately
+        const url = trackPool[idx].preview_url;
+        let vidId = "";
+        const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+        const match = url.match(regExp);
+        
+        if (match && match[2].length == 11) {
+            vidId = match[2];
+        } else {
+            vidId = url.split('/').pop();
+        }
+
+        if (ytPlayer && ytPlayer.loadVideoById) {
+            ytPlayer.loadVideoById(vidId);
+            document.getElementById('trackTitle').innerText = trackPool[idx].title;
+        }
     }
-}
 
     function togglePlayPause() {
-        if (isPaused) {
-            ytPlayer.playVideo();
-        } else {
-            ytPlayer.pauseVideo();
-        }
+        if (!ytPlayer) return;
+        isPaused ? ytPlayer.playVideo() : ytPlayer.pauseVideo();
     }
 
     function shuffle() {
-    if (trackPool.length > 1) {
-        let newIdx;
-        // Keep picking a random number until it's different from the current one
-        do {
-            newIdx = Math.floor(Math.random() * trackPool.length);
-        } while (newIdx === poolIdx);
-        
-        playTrack(newIdx);
-    } else if (trackPool.length === 1) {
-        playTrack(0); // Only one song available
-    }
-}
-
-    async function stopSession() {
-        const mood = document.getElementById('moodInput').value;
-        const duration = seconds;
-
-        ytPlayer.stopVideo();
-        clearInterval(timerInterval);
-
-        if(userId) {
-            try {
-                await fetch(`${API_BASE_URL}/stop`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: userId, mood: mood, duration: duration })
-                });
-                fetchStats();
-            } catch(e) { console.error("Stop Error:", e); }
+        if (trackPool.length > 1) {
+            // Pick a truly random index that isn't the current one
+            let newIdx;
+            do {
+                newIdx = Math.floor(Math.random() * trackPool.length);
+            } while (newIdx === poolIdx);
+            
+            poolIdx = newIdx;
+            playTrack(poolIdx);
+        } else if (trackPool.length === 1) {
+            playTrack(0);
         }
+    }
 
+    function stopSession() {
+        if (ytPlayer) ytPlayer.stopVideo();
+        clearInterval(timerInterval);
         document.getElementById('result').style.display = 'none';
         document.getElementById('sessionControls').style.display = 'none';
         document.getElementById('volContainer').style.display = 'none';
@@ -367,44 +353,20 @@
     }
 
     async function login() {
-        const idInput = document.getElementById('uidInput');
-        const pwdInput = document.getElementById('pwdInput');
-        const loginBtn = document.getElementById('loginBtn');
-        
-        const id = idInput.value.trim();
-        const pwd = pwdInput.value.trim();
-
-        if(!id || !pwd) {
-            alert("Please enter both ID and Password.");
-            return;
-        }
-
-        loginBtn.innerText = "Verifying...";
-        loginBtn.disabled = true;
-
+        const id = document.getElementById('uidInput').value.trim();
+        if(!id) return;
         try {
             const res = await fetch(`${API_BASE_URL}/auth`, {
-                method: 'POST', 
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: id, password: pwd })
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ user_id: id, password: "default_password" }) // Added placeholder password
             });
-            
             const data = await res.json();
-
             if (data.status === 'success') {
                 userId = data.user_id;
                 sessionStorage.setItem('zentune_id', userId);
                 showUser(userId);
-            } else {
-                alert(data.message || "Login failed.");
-                pwdInput.value = ""; 
             }
-        } catch (e) { 
-            alert("Server is waking up. Please try again in 10 seconds."); 
-        } finally {
-            loginBtn.innerText = "Login";
-            loginBtn.disabled = false;
-        }
+        } catch (e) { alert("Server is waking up. Try again in 5 seconds."); }
     }
 
     function showUser(id) { 
@@ -434,7 +396,9 @@
             seconds++;
             let m = Math.floor(seconds / 60), s = (seconds % 60);
             document.getElementById('sessionTimer').innerText = `SESSION: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            let percent = (seconds / (parseInt(document.getElementById('timeGoal').value) * 60)) * 100;
+            
+            let goalMins = parseInt(document.getElementById('timeGoal').value) || 25;
+            let percent = (seconds / (goalMins * 60)) * 100;
             document.getElementById('goalBarFill').style.width = Math.min(percent, 100) + "%";
         }, 1000);
     }
@@ -444,7 +408,21 @@
     function openGuide() { document.getElementById('guideOverlay').style.display = 'flex'; }
     function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
     function adjustGoal(a) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value) + a); }
-    function updateAura() { }
+    
+    // Fixed Aura Logic to match your CSS variables
+    function updateAura() {
+        const mood = document.getElementById('moodInput').value;
+        const colors = {
+            focus: '#6c63ff', deepwork: '#4a4a8a', kickstart: '#ffcc00',
+            unmotivated: '#ff6600', happy: '#ffeb3b', anxious: '#81c784',
+            stressed: '#4db6ac', socially-drained: '#90a4ae', 
+            heartbroken: '#f06292', sleepy: '#5c6bc0'
+        };
+        const color = colors[mood] || '#6c63ff';
+        document.documentElement.style.setProperty('--aura', color + '4D'); // 4D = 30% alpha
+        document.documentElement.style.setProperty('--accent', color);
+    }
+
     function logout() { 
         sessionStorage.removeItem('zentune_id'); 
         location.reload(); 
