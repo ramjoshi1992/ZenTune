@@ -254,35 +254,52 @@
         }
     }
 
-    async function calibrate() {
-        const mood = document.getElementById('moodInput').value;
-        const btn = document.getElementById('calBtn');
-        const originalText = "Calibrate";
-        
-        btn.innerText = "Analyzing..."; 
-        btn.disabled = true;
+   async function calibrate() {
+    const mood = document.getElementById('moodInput').value;
+    const btn = document.getElementById('calBtn');
+    const originalText = "Calibrate";
+    
+    btn.innerText = "Analyzing..."; 
+    btn.disabled = true;
 
-        try {
-            const res = await fetch(`${API_BASE_URL}/identify`, {
-                method:'POST', headers:{'Content-Type':'application/json'}, 
-                body:JSON.stringify({mood:mood, user_id: userId || "guest"})
-            });
-            const data = await res.json();
-            if(data.status==='success' && data.tracks.length > 0) { 
-                trackPool=data.tracks; poolIdx=0; 
+    try {
+        const res = await fetch(`${API_BASE_URL}/identify`, {
+            method:'POST', 
+            headers:{'Content-Type':'application/json'}, 
+            body:JSON.stringify({mood:mood, user_id: userId || "guest"})
+        });
+        
+        const data = await res.json();
+        
+        // FAIL-SAFE: Check if tracks exist and player is initialized
+        if(data && data.tracks && data.tracks.length > 0) { 
+            trackPool = data.tracks; 
+            poolIdx = 0; 
+            
+            // Ensure the UI updates BEFORE we try to load the video
+            document.getElementById('result').style.display = 'block';
+            document.getElementById('sessionControls').style.display = 'flex';
+            document.getElementById('volContainer').style.display = 'flex';
+            
+            if (ytPlayer && typeof ytPlayer.loadVideoById === 'function') {
                 playTrack(0);
-                document.getElementById('result').style.display='block';
-                document.getElementById('sessionControls').style.display='flex';
-                document.getElementById('volContainer').style.display='flex';
-                resetSessionState(); // runTimer() removed from here to wait for actual playback
+                resetSessionState(); 
+            } else {
+                alert("YouTube Player is still loading. Please wait 2 seconds and try again.");
             }
-        } catch(e) { 
-            btn.innerText = "Waking server...";
-            setTimeout(() => calibrate(), 3000); 
-            return;
+        } else {
+            alert("No tracks found for this mood. Try another one!");
         }
-        btn.innerText = originalText; btn.disabled = false;
+    } catch(e) { 
+        console.error("Calibration Error:", e);
+        btn.innerText = "Waking server...";
+        setTimeout(() => calibrate(), 3000); 
+        return;
+    } finally {
+        btn.innerText = originalText; 
+        btn.disabled = false;
     }
+}
 
     function playTrack(idx) {
         poolIdx = idx;
