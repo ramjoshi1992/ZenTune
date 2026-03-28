@@ -63,12 +63,36 @@
 
     // 3. YouTube & Playback Logic
     function onYouTubeIframeAPIReady() {
-        ytPlayer = new YT.Player('player', {
-            height: '100%', width: '100%',
-            playerVars: { 'autoplay': 1, 'controls': 0, 'enablejsapi': 1 },
-            events: { 'onStateChange': onPlayerStateChange }
-        });
+    ytPlayer = new YT.Player('player', {
+        height: '100%',
+        width: '100%',
+        playerVars: { 
+            'autoplay': 1, 
+            'controls': 0, 
+            'enablejsapi': 1,
+            'origin': window.location.origin, // THIS LINE FIXES THE POSTMESSAGE ERROR
+            'widget_referrer': window.location.origin
+        },
+        events: { 
+            'onStateChange': onPlayerStateChange,
+            'onReady': onPlayerReady,
+            'onError': onPlayerError
+        }
+    });
+}
+
+function onPlayerReady(event) {
+    console.log("YouTube Player is ready and secured.");
+}
+
+function onPlayerError(event) {
+    console.error("YouTube Player Error:", event.data);
+    // If a video is blocked/unembeddable, skip to the next one automatically
+    if (event.data === 101 || event.data === 150) {
+        console.warn("Video unplayable, shuffling...");
+        shuffle();
     }
+}
 
     function onPlayerStateChange(event) {
         if (event.data == YT.PlayerState.PLAYING) {
