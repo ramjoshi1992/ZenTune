@@ -28,15 +28,14 @@
         
         .nav-group { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; margin-right: auto; }
         
-        /* Updated login styling for vertical stack */
         #loginForm { display: flex; flex-direction: column; gap: 8px; width: 140px; }
         #uidInput, #pwdInput { padding: 8px 15px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; width: 100%; box-sizing: border-box; font-size: 12px; }
         .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; transition: 0.3s; width: 100%; }
+        .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
         .stats-panel { 
             position: fixed; left: 0; top: 0; bottom: 0;
             width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); 
-            /* Increased padding-top to 180px to accommodate the taller login form */
             padding: 180px 20px 20px; display: flex; flex-direction: column; gap: 12px; 
             transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); 
             z-index: 900; transform: translateX(-100%); 
@@ -132,7 +131,7 @@
             <div id="loginForm">
                 <input type="text" id="uidInput" placeholder="User ID">
                 <input type="password" id="pwdInput" placeholder="Password">
-                <button onclick="login()" class="login-btn">Login</button>
+                <button onclick="login()" class="login-btn" id="loginBtn">Login</button>
             </div>
             <div id="userGreeting" style="display:none; font-size: 13px; font-weight:bold;">
                 <span id="userLabel"></span> 
@@ -307,9 +306,25 @@
         }
     }
 
-    function stopSession() {
+    async function stopSession() {
+        const mood = document.getElementById('moodInput').value;
+        const duration = seconds;
+
         ytPlayer.stopVideo();
         clearInterval(timerInterval);
+
+        // Save session if logged in
+        if(userId) {
+            try {
+                await fetch(`${API_BASE_URL}/stop`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, mood: mood, duration: duration })
+                });
+                fetchStats();
+            } catch(e) { console.error("Stop Error:", e); }
+        }
+
         document.getElementById('result').style.display = 'none';
         document.getElementById('sessionControls').style.display = 'none';
         document.getElementById('volContainer').style.display = 'none';
@@ -324,23 +339,44 @@
     }
 
     async function login() {
-        const id = document.getElementById('uidInput').value.trim();
-        const pwd = document.getElementById('pwdInput').value.trim();
-        if(!id || !pwd) return;
+        const idInput = document.getElementById('uidInput');
+        const pwdInput = document.getElementById('pwdInput');
+        const loginBtn = document.getElementById('loginBtn');
+        
+        const id = idInput.value.trim();
+        const pwd = pwdInput.value.trim();
+
+        if(!id || !pwd) {
+            alert("Please enter both ID and Password.");
+            return;
+        }
+
+        loginBtn.innerText = "Verifying...";
+        loginBtn.disabled = true;
+
         try {
             const res = await fetch(`${API_BASE_URL}/auth`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                method: 'POST', 
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ user_id: id, password: pwd })
             });
+            
             const data = await res.json();
+
             if (data.status === 'success') {
                 userId = data.user_id;
                 sessionStorage.setItem('zentune_id', userId);
                 showUser(userId);
             } else {
-                alert(data.message || "Invalid credentials.");
+                alert(data.message || "Login failed.");
+                pwdInput.value = ""; 
             }
-        } catch (e) { alert("Server is waking up. Try again in 5 seconds."); }
+        } catch (e) { 
+            alert("Server is waking up. Please try again in 10 seconds."); 
+        } finally {
+            loginBtn.innerText = "Login";
+            loginBtn.disabled = false;
+        }
     }
 
     function showUser(id) { 
