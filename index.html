@@ -317,11 +317,18 @@
     }
 
     function shuffle() {
-        if (trackPool.length > 0) {
-            poolIdx = (poolIdx + 1) % trackPool.length;
-            playTrack(poolIdx);
-        }
+    if (trackPool.length > 1) {
+        let newIdx;
+        // Keep picking a random number until it's different from the current one
+        do {
+            newIdx = Math.floor(Math.random() * trackPool.length);
+        } while (newIdx === poolIdx);
+        
+        playTrack(newIdx);
+    } else if (trackPool.length === 1) {
+        playTrack(0); // Only one song available
     }
+}
 
     async function stopSession() {
         const mood = document.getElementById('moodInput').value;
