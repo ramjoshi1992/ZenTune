@@ -258,10 +258,15 @@
     let isPaused = false, userId = sessionStorage.getItem('zentune_id'); 
 
     window.onload = () => { 
-        if(!userId) openGuide();
-        if(userId) showUser(userId); 
-        updateAura(); 
-    };
+    const savedId = sessionStorage.getItem('zentune_id');
+    if (savedId) {
+        userId = savedId;
+        showUser(userId); 
+    } else {
+        openGuide();
+    }
+    updateAura(); 
+};
 
     function onYouTubeIframeAPIReady() {
         ytPlayer = new YT.Player('player', {
@@ -461,16 +466,26 @@ async function handleAuth() {
             alert(data.message || "Error");
         }
     } catch (e) {
-        alert("Server is waking up...");
+        console.error("Caught an error during auth:", e);
+        alert("Something went wrong. Check the console for details.");
     }
 }
 
     function showUser(id) { 
-        document.getElementById('loginForm').style.display='none'; 
-        document.getElementById('userGreeting').style.display='block'; 
-        document.getElementById('userLabel').innerText = `Welcome, ${id}`; 
-        fetchStats(); 
+    userId = id;
+    
+    // Hide the new auth stack instead of the old loginForm
+    const authBox = document.getElementById('authContainer');
+    if (authBox) {
+        authBox.style.display = 'none';
     }
+    
+    document.getElementById('userGreeting').style.display = 'block'; 
+    document.getElementById('userLabel').innerText = `Welcome, ${id}`; 
+    
+    // Fetch the stats for the sidebar
+    fetchStats(); 
+}
 
     async function fetchStats() {
         if(!userId) return;
