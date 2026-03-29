@@ -36,6 +36,7 @@ def init_db():
     if conn is None: return
     try:
         cur = conn.cursor()
+        # Your existing users table is fine
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 user_id TEXT PRIMARY KEY,
@@ -47,6 +48,7 @@ def init_db():
                 last_session_date DATE
             )
         ''')
+        # Updated history table to ensure columns match our logic
         cur.execute('''
             CREATE TABLE IF NOT EXISTS history (
                 id SERIAL PRIMARY KEY,
@@ -56,8 +58,16 @@ def init_db():
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
+        
+        # SELF-HEALING: Check if 'mood' exists in history (if you created it long ago)
+        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='history' AND column_name='mood';")
+        if not cur.fetchone():
+            cur.execute("ALTER TABLE history ADD COLUMN mood TEXT;")
+            print("Added missing 'mood' column.")
+
         conn.commit()
         cur.close()
+        print("Database initialized successfully.")
     except Exception as e:
         print(f"Error during init_db: {e}")
     finally:
@@ -165,13 +175,14 @@ def identify_song():
 def stop_session():
     data = request.json
     uid = data.get('user_id')
-    duration_minutes = round(data.get('duration', 0) / 60)
+    # Save raw seconds instead of rounding to minutes
+    duration_seconds = data.get('duration', 0) 
     mood = data.get('mood')
     conn = get_db_connection()
     if not conn: return jsonify({"status": "error"}), 500
     try:
         c = conn.cursor()
-        c.execute('INSERT INTO history (user_id, mood, duration) VALUES (%s, %s, %s)', (uid, mood, duration_minutes))
+        c.execute('INSERT INTO history (user_id, mood, duration) VALUES (%s, %s, %s)', (uid, mood, duration_seconds))
         conn.commit()
         return jsonify({"status": "success"})
     finally:
@@ -180,17 +191,80 @@ def stop_session():
 @app.route('/stats/<user_id>', methods=['GET'])
 def get_stats(user_id):
     conn = get_db_connection()
-    if not conn: return jsonify({"status": "error"}), 500
+    if not conn: 
+        return jsonify({"status": "error", "message": "Database connection failed"}), 500
+    
     try:
-        c = conn.cursor()
-        c.execute("SELECT COUNT(*), SUM(duration) FROM history WHERE user_id=%s", (user_id,))
-        row = c.fetchone()
-        total, total_mins = row[0] or 0, row[1] or 0
-        c.execute("SELECT mood FROM history WHERE user_id=%s GROUP BY mood ORDER BY COUNT(*) DESC LIMIT 1", (user_id,))
-        mood_row = c.fetchone()
-        dominant = mood_row[0].capitalize() if mood_row else "Initial Scan"
-        return jsonify({"total": total, "total_time": f"{total_mins//60}h {total_mins%60}m", "dominant": dominant, "streak": "0 Days"})
+        cur = conn.cursor()
+        
+        # 1. Get Count and Total Duration
+        # Using COALESCE ensures we get 0 instead of None if no history exists
+        cur.execute("""
+            SELECT COUNT(*), COALESCE(SUM(duration), 0) 
+            FROM history 
+            WHERE user_id = %s
+        """, (user_id,))
+        row = cur.fetchone()
+        
+        total_sessions = row[0] if row else 0
+        total_seconds = row[1] if row else 0
+        
+        # 2. Get the Most Frequent Mood (Dominant Mood)
+        cur.execute("""
+            SELECT mood FROM history 
+            WHERE user_id = %s 
+            GROUP BY mood 
+            ORDER BY COUNT(*) DESC 
+            LIMIT 1
+        """, (user_id,))
+        mood_row = cur.fetchone()
+        dominant = mood_row[0].capitalize() if mood_row and mood_row[0] else "Initial Scan"
+        
+        # 3. Format Time (Convert seconds to h/m)
+        hours = total_seconds // 3600
+        minutes = (total_seconds % 3600) // 60
+
+        return jsonify({
+            "total": total_sessions,
+            "total_time": f"{hours}h {minutes}m",
+            "dominant": dominant,
+            "streak": "Calculating..." # We can build the streak logic next!
+        }), 200
+
+    except Exception as e:
+        print(f"Stats Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
     finally:
+        cur.close()
+        conn.close()
+
+@app.route('/save_session', methods=['POST'])
+def save_session():
+    data = request.get_json()
+    user_id = data.get('user_id')
+    duration = data.get('duration')
+    mood = data.get('mood')
+
+    if not user_id or user_id == 'guest':
+        return jsonify({"status": "ignored"}), 200
+
+    conn = get_db_connection()
+    if not conn: return jsonify({"status": "error"}), 500
+    
+    try:
+        cur = conn.cursor()
+        # Changed 'created_at' to 'timestamp' to match your existing init_db
+        cur.execute("""
+            INSERT INTO history (user_id, duration, mood, timestamp) 
+            VALUES (%s, %s, %s, now())
+        """, (user_id, duration, mood))
+        conn.commit()
+        return jsonify({"status": "success"}), 201
+    except Exception as e:
+        print(f"Save Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        cur.close()
         conn.close()
 
 if __name__ == '__main__':
