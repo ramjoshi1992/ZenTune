@@ -338,16 +338,49 @@
     }
 
     function finishSession() {
-        clearInterval(timerInterval);
-        isPaused = true;
-        if (ytPlayer) ytPlayer.pauseVideo();
+    clearInterval(timerInterval);
+    isPaused = true;
+    if (ytPlayer) ytPlayer.pauseVideo();
 
-        const ping = document.getElementById('notificationSound');
-        ping.play().catch(e => console.log("Audio block:", e));
+    const ping = document.getElementById('notificationSound');
+    ping.play().catch(e => console.log("Audio block:", e));
 
-        document.getElementById('playPauseBtn').innerText = "Start";
+    document.getElementById('playPauseBtn').innerText = "Start";
+    
+    // NEW: Save to database and then alert the user
+    saveSessionToDatabase();
+    
+    // We use a slight delay for the alert so the save request can fire off
+    setTimeout(() => {
         alert("Session Complete! Great job staying focused.");
+    }, 500);
+}
+
+    async function saveSessionToDatabase() {
+    if (!userId || userId === 'guest') return;
+
+    const mood = document.getElementById('moodInput').value;
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}/save_session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                duration: seconds,
+                mood: mood
+            })
+        });
+
+        if (res.ok) {
+            console.log("Session saved successfully");
+            seconds = 0; // <--- ADD THIS to prevent double-saving
+            fetchStats();
+        }
+    } catch (e) {
+        console.error("Failed to save session:", e);
     }
+}
 
     async function calibrate() {
         const mood = document.getElementById('moodInput').value;
@@ -395,16 +428,25 @@
     }
 
     function stopSession() {
-        if(ytPlayer) ytPlayer.stopVideo();
-        clearInterval(timerInterval);
-        document.getElementById('result').style.display = 'none';
-        document.getElementById('sessionControls').style.display = 'none';
-        document.getElementById('volContainer').style.display = 'none';
-        document.getElementById('trackTitle').innerText = "";
-        document.getElementById('sessionTimer').innerText = "SESSION: 00:00";
-        document.getElementById('goalBarFill').style.width = "0%";
-        seconds = 0;
+    if(ytPlayer) ytPlayer.stopVideo();
+    clearInterval(timerInterval);
+    
+    // NEW: Ask to save if they've done at least 1 minute of work
+    if (seconds >= 60) {
+        if (confirm("Save your progress so far?")) {
+            saveSessionToDatabase();
+        }
     }
+
+    document.getElementById('result').style.display = 'none';
+    document.getElementById('sessionControls').style.display = 'none';
+    document.getElementById('volContainer').style.display = 'none';
+    document.getElementById('trackTitle').innerText = "";
+    document.getElementById('sessionTimer').innerText = "SESSION: 00:00";
+    document.getElementById('goalBarFill').style.width = "0%";
+    
+    seconds = 0; // Reset after checking if we should save
+}
 
     function changeVolume(val) { if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(val); }
 
