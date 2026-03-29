@@ -103,6 +103,32 @@
 
         .vol-container { display: none; margin-top: 15px; align-items: center; gap: 10px; }
         #volSlider { flex: 1; cursor: pointer; accent-color: var(--accent); }
+
+        /* Auth Drill-down Styles */
+.auth-stack { display: flex; flex-direction: column; align-items: center; width: 140px; pointer-events: auto; }
+
+.auth-level { 
+    display: none; 
+    flex-direction: column; 
+    align-items: center; 
+    width: 100%;
+    opacity: 0;
+    transition: all 0.4s ease;
+    transform: translateY(-10px);
+}
+
+.auth-level.active { display: flex; opacity: 1; transform: translateY(0); }
+
+.connector-line {
+    width: 2px;
+    height: 15px;
+    background: linear-gradient(to bottom, var(--accent), transparent);
+    margin: 4px 0;
+}
+
+.dimmed { opacity: 0.3 !important; pointer-events: none; filter: blur(0.5px); }
+.mini-btn { padding: 6px 12px; font-size: 10px; margin-bottom: 5px; }
+#authInputs { width: 100%; display: flex; flex-direction: column; gap: 6px; }
     </style>
 </head>
 <body data-theme="dark">
@@ -125,26 +151,45 @@
     <div class="help-fab" onclick="openGuide()">i</div>
 
     <nav class="top-nav">
-        <div class="nav-group">
-            <div id="loginForm">
-                <input type="text" id="uidInput" placeholder="User ID">
-                <input type="password" id="pwdInput" placeholder="Password">
-                <button onclick="login()" class="login-btn">Login</button>
+    <div class="nav-group">
+        <div id="authContainer" class="auth-stack">
+            <button id="mainAuthBtn" onclick="stepOne()" class="login-btn">SIGN IN</button>
+            
+            <div id="step1" class="auth-level">
+                <div class="connector-line"></div>
+                <div style="display:flex; gap:5px; width:100%;">
+                    <button class="login-btn mini-btn" onclick="stepTwo('new')">NEW</button>
+                    <button class="login-btn mini-btn" onclick="stepTwo('returning')">BACK</button>
+                </div>
             </div>
-            <div id="userGreeting" style="display:none; font-size: 13px; font-weight:bold;">
-                <span id="userLabel"></span> 
-                <span onclick="logout()" style="color:#ff4d4d; cursor:pointer; margin-left:10px; font-size:10px; text-decoration:underline;">LOGOUT</span>
+
+            <div id="step2" class="auth-level">
+                <div class="connector-line"></div>
+                <div id="authInputs">
+                    <input type="text" id="uidInput" placeholder="User ID">
+                    <input type="password" id="pwdInput" placeholder="Password">
+                    <button id="finalAuthBtn" onclick="handleAuth()" class="login-btn">GO</button>
+                    <span onclick="goBack()" style="font-size:9px; cursor:pointer; opacity:0.5; margin-top:5px; align-self:center;">← BACK</span>
+                </div>
             </div>
-            <button onclick="toggleInsights()" id="insightToggleBtn">SHOW INSIGHTS</button>
         </div>
 
-        <div class="settings-column">
-                        <div class="theme-container">
-                Dark Mode
-                <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
+        <div id="userGreeting" style="display:none; text-align: right;">
+            <span id="userLabel" style="font-size: 13px; font-weight:bold; display:block;"></span>
+            <div style="display:flex; gap:10px; margin-top:5px; justify-content: flex-end;">
+                 <button onclick="toggleInsights()" id="insightToggleBtn" style="width:auto; padding: 5px 10px;">INSIGHTS</button>
+                 <span onclick="logout()" style="color:#ff4d4d; cursor:pointer; font-size:10px; text-decoration:underline; align-self:center;">LOGOUT</span>
             </div>
         </div>
-    </nav>
+    </div>
+
+    <div class="settings-column">
+        <div class="theme-container">
+            Dark Mode
+            <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
+        </div>
+    </div>
+</nav>
 
     <aside class="stats-panel">
         <h3 style="margin-top:0; font-size:16px;">Insights</h3>
@@ -358,23 +403,67 @@
 
     function changeVolume(val) { if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(val); }
 
-    async function login() {
-        const id = document.getElementById('uidInput').value.trim();
-        const pwd = document.getElementById('pwdInput').value.trim();
-        if(!id || !pwd) return;
-        try {
-            const res = await fetch(`${API_BASE_URL}/auth`, {
-                method: 'POST', headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ user_id: id, password: pwd })
-            });
-            const data = await res.json();
-            if (data.status === 'success') {
-                userId = data.user_id;
-                sessionStorage.setItem('zentune_id', userId);
-                showUser(userId);
-            } else { alert(data.message || "Invalid credentials."); }
-        } catch (e) { alert("Server is waking up."); }
+    let currentStep = 0;
+let authMode = '';
+
+function stepOne() {
+    document.getElementById('mainAuthBtn').classList.add('dimmed');
+    document.getElementById('step1').classList.add('active');
+    currentStep = 1;
+}
+
+function stepTwo(mode) {
+    authMode = mode;
+    document.getElementById('step1').classList.add('dimmed');
+    document.getElementById('step2').classList.add('active');
+    document.getElementById('finalAuthBtn').innerText = (mode === 'new') ? "REGISTER" : "LOGIN";
+    currentStep = 2;
+}
+
+function goBack() {
+    if (currentStep === 2) {
+        document.getElementById('step2').classList.remove('active');
+        document.getElementById('step1').classList.remove('dimmed');
+        currentStep = 1;
+    } else if (currentStep === 1) {
+        document.getElementById('step1').classList.remove('active');
+        document.getElementById('mainAuthBtn').classList.remove('dimmed');
+        currentStep = 0;
     }
+}
+
+async function handleAuth() {
+    const id = document.getElementById('uidInput').value.trim();
+    const pwd = document.getElementById('pwdInput').value.trim();
+    if(!id || !pwd) return alert("Fill all fields");
+
+    const endpoint = (authMode === 'new') ? '/register' : '/auth';
+    
+    try {
+        const res = await fetch(`${API_BASE_URL}${endpoint}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: id, password: pwd })
+        });
+        const data = await res.json();
+
+        if (res.status === 201 || (res.status === 200 && data.status === 'success') || data.user_id) {
+            if (authMode === 'new') {
+                alert("Account created! Please Sign In.");
+                location.reload();
+            } else {
+                userId = id;
+                sessionStorage.setItem('zentune_id', userId);
+                document.getElementById('authContainer').style.display = 'none';
+                showUser(userId);
+            }
+        } else {
+            alert(data.message || "Error");
+        }
+    } catch (e) {
+        alert("Server is waking up...");
+    }
+}
 
     function showUser(id) { 
         document.getElementById('loginForm').style.display='none'; 
