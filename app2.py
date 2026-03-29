@@ -224,11 +224,40 @@ def get_stats(user_id):
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
 
+        # 4. Calculate Streak (New Logic)
+        cur.execute("""
+            SELECT DISTINCT date(created_at) 
+            FROM history 
+            WHERE user_id = %s 
+            ORDER BY date(created_at) DESC
+        """, (user_id,))
+        
+        dates = [r[0] for r in cur.fetchall()]
+        streak = 0
+        if dates:
+            from datetime import date, timedelta
+            today = date.today()
+            yesterday = today - timedelta(days=1)
+            
+            # Start checking from today or yesterday
+            # (If they haven't practiced today, the streak might still be alive from yesterday)
+            current_check = dates[0]
+            if current_check == today or current_check == yesterday:
+                streak = 1
+                for i in range(len(dates) - 1):
+                    # Check if the next date in the list is exactly one day prior
+                    if dates[i] - timedelta(days=1) == dates[i+1]:
+                        streak += 1
+                    else:
+                        break
+            else:
+                streak = 0 # Streak broken (last session was before yesterday)
+
         return jsonify({
             "total": total_sessions,
             "total_time": f"{hours}h {minutes}m",
             "dominant": dominant,
-            "streak": "Calculating..." # We can build the streak logic next!
+            "streak": f"{streak} Days"
         }), 200
 
     except Exception as e:
