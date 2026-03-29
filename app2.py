@@ -3,7 +3,7 @@ import ssl
 import httplib2
 import traceback
 import psycopg2
-import random  # Added for randomization
+import random
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 from dotenv import load_dotenv
