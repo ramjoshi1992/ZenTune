@@ -226,10 +226,10 @@ def get_stats(user_id):
 
         # 4. Calculate Streak (New Logic)
         cur.execute("""
-            SELECT DISTINCT date(created_at) 
+            SELECT DISTINCT date(timestamp) 
             FROM history 
             WHERE user_id = %s 
-            ORDER BY date(created_at) DESC
+            ORDER BY date(timestamp) DESC
         """, (user_id,))
         
         dates = [r[0] for r in cur.fetchall()]
