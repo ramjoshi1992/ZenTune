@@ -258,6 +258,9 @@
     let isPaused = false, userId = sessionStorage.getItem('zentune_id'); 
 
     window.onload = () => { 
+    // Wake up the server silently
+    fetch(`${API_BASE_URL}/reset-password`, { method: 'HEAD' }).catch(() => {});
+
     const savedId = sessionStorage.getItem('zentune_id');
     if (savedId) {
         userId = savedId;
