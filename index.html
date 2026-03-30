@@ -7,23 +7,22 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <script src="https://www.youtube.com/iframe_api?v=1.0.2"></script>
     <style>
-        :root { 
-            --bg: #cfd8dc; --card: #b2beb5; --sidebar: #f0f2f5; --text: #37474f;       
+        :root {
+            --bg: #cfd8dc; --card: #b2beb5; --sidebar: #f0f2f5; --text: #37474f;
             --accent: #6c63ff; --border: rgba(0,0,0,0.15); --input-bg: #e1e8eb;
-            --aura: rgba(108, 99, 255, 0.3);
+            --aura: rgba(108,99,255,0.3);
             --pulse-speed: 4s; --radius-lg: 18px; --radius-md: 12px; --sidebar-width: 260px;
         }
-        [data-theme="dark"] { 
-            --bg: #0b0e14; --card: #161b22; --text: #efefff; --accent: #9d96ff; 
+        [data-theme="dark"] {
+            --bg: #0b0e14; --card: #161b22; --text: #efefff; --accent: #9d96ff;
             --sidebar: #0d1117; --border: rgba(255,255,255,0.1); --input-bg: #0d1117;
         }
 
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; display: flex; height: 100vh; overflow: hidden; transition: 0.5s ease; }
 
-        /* Navigation Layout */
+        /* ── Navigation ── */
         .top-nav { position: fixed; top: 0; right: 0; left: 0; display: flex; justify-content: space-between; align-items: flex-start; padding: 25px 30px; z-index: 1000; pointer-events: none; }
         .nav-group, .settings-column { pointer-events: auto; }
-        
         .nav-group { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; }
         .settings-column { display: flex; flex-direction: column; align-items: flex-end; }
 
@@ -37,65 +36,47 @@
         .login-btn { padding: 8px 18px; border-radius: 20px; border: none; background: var(--accent); color: white; cursor: pointer; font-weight: 600; transition: 0.3s; width: 100%; }
         .mini-btn { padding: 6px 12px; font-size: 10px; margin-bottom: 5px; }
 
-        /* Sidebar & Main */
-        .stats-panel { 
-            position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-width); background: var(--sidebar); border-right: 1px solid var(--border); 
-            padding: 180px 20px 20px; display: flex; flex-direction: column; gap: 12px; transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1); z-index: 900; transform: translateX(-100%); 
+        /* ── Sidebar & Layout ── */
+        .stats-panel {
+            position: fixed; left: 0; top: 0; bottom: 0; width: var(--sidebar-width); background: var(--sidebar);
+            border-right: 1px solid var(--border); padding: 180px 20px 20px; display: flex; flex-direction: column;
+            gap: 12px; transition: transform 0.5s cubic-bezier(0.4,0,0.2,1); z-index: 900; transform: translateX(-100%);
         }
         body.show-insights .stats-panel { transform: translateX(0); }
         .stat-card { background: var(--card); padding: 15px; border-radius: var(--radius-lg); border: 1px solid var(--border); }
         .stat-val { font-size: 15px; font-weight: 700; color: var(--accent); }
 
-                    .zen-btn {
-                flex: 1; 
-                background: var(--input-bg); 
-                border: 1px solid var(--border);
-                border-radius: 12px; 
-                padding: 10px 5px; 
-                cursor: help; 
-                transition: 0.3s;
-                display: flex; 
-                flex-direction: column; 
-                align-items: center; 
-                gap: 6px; 
-                color: var(--text);
-            }
-            .zen-btn span:first-child { font-size: 20px; }
-            .zen-btn span:last-child { font-size: 9px; text-transform: uppercase; font-weight: 700; opacity: 0.7; }
-            .zen-btn:hover, .zen-btn.selected { 
-                border-color: var(--accent); 
-                background: var(--aura); 
-                transform: translateY(-3px); 
-            }
-            .zen-btn.selected { border-width: 2px; box-shadow: 0 4px 10px var(--aura); }
-        
         .main-content { flex: 1; display: flex; justify-content: center; align-items: center; transition: all 0.5s ease; }
         body.show-insights .main-content { margin-left: var(--sidebar-width); }
-        
-        .card { 
-            background: var(--card); padding: 25px 30px; border-radius: 24px; width: 100%; max-width: 320px; text-align: center; 
-            border: 1px solid var(--border); position: relative; box-shadow: 0 0 50px var(--aura); animation: pulseAura var(--pulse-speed) infinite alternate ease-in-out;
-        }
 
+        /* ── Main Card ── */
+        .card {
+            background: var(--card); padding: 25px 30px; border-radius: 24px; width: 100%; max-width: 320px;
+            text-align: center; border: 1px solid var(--border); position: relative;
+            box-shadow: 0 0 50px var(--aura); animation: pulseAura var(--pulse-speed) infinite alternate ease-in-out;
+        }
         @keyframes pulseAura { 0% { box-shadow: 0 0 20px var(--aura); } 100% { box-shadow: 0 0 70px var(--aura); } }
-        
+
         .progress-container { width: 100%; height: 6px; background: rgba(0,0,0,0.1); border-radius: 10px; margin: 10px 0 15px; overflow: hidden; display: none; }
         .progress-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 10px; transition: width 0.4s ease; }
-        
+
         .timer { font-size: 13px; font-weight: 800; color: var(--text); margin-bottom: 5px; letter-spacing: 1px; }
         .adj-btn { background: var(--input-bg); border: 1px solid var(--border); color: var(--text); width: 40px; height: 40px; border-radius: var(--radius-md); cursor: pointer; font-size: 18px; font-weight: bold; }
-        
         input[type="number"] { text-align: center; width: 100%; height: 40px; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-weight: bold; outline: none; }
         select { width: 100%; height: 44px; padding: 0 15px; margin: 8px 0; border-radius: var(--radius-md); border: 1px solid var(--border); background: var(--input-bg); color: var(--text); outline: none; cursor: pointer; }
+        input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
 
         .cal-btn { width: 100%; height: 44px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; margin-top: 10px; }
         .control-btns { display: none; gap: 8px; margin-top: 12px; }
         .icon-btn { flex: 1; background: #4a4a8a; border: none; border-radius: var(--radius-md); color: white; padding: 10px; cursor: pointer; font-size: 14px; }
         .stop-btn { background: #ff4d4d; }
-
         .video-box { width: 100%; margin: 15px auto 0; aspect-ratio: 16/9; border-radius: var(--radius-md); overflow: hidden; display: none; background: #000; }
+        .vol-container { display: none; margin-top: 15px; align-items: center; gap: 10px; }
+        #volSlider { flex: 1; cursor: pointer; accent-color: var(--accent); }
+
+        /* ── Theme Toggle ── */
         .theme-container { display: flex; align-items: center; gap: 10px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
-        
         .switch { position: relative; display: inline-block; width: 40px; height: 20px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background: #999; border-radius: 20px; transition: 0.4s; }
@@ -103,91 +84,171 @@
         input:checked + .slider { background: var(--accent); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-                /* Removes arrows from the number input (Chrome, Safari, Edge, Opera) */
-        input::-webkit-outer-spin-button,
-        input::-webkit-inner-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        
-        /* Removes arrows from the number input (Firefox) */
-        input[type=number] {
-            -moz-appearance: textfield;
-        }
-        
+        /* ── Help FAB ── */
         .help-fab { position: fixed; bottom: 25px; right: 25px; width: 45px; height: 45px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 2000; transition: 0.3s; }
         .help-fab:hover { transform: scale(1.1); }
 
+        /* ── Guide Overlay ── */
         #guideOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 5000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .guide-box { background: var(--card); padding: 30px; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--accent); color: var(--text); }
         .guide-box ul { text-align: left; font-size: 13px; line-height: 1.6; padding-left: 20px; margin: 15px 0; }
-        
-        .vol-container { display: none; margin-top: 15px; align-items: center; gap: 10px; }
-        #volSlider { flex: 1; cursor: pointer; accent-color: var(--accent); }
+
+        /* ── Shared Overlay Shell ── */
+        .overlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.87); z-index: 6000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(8px); }
+        .overlay-box { background: var(--card); padding: 28px 24px; border-radius: 24px; max-width: 430px; width: 90%; text-align: center; border: 1px solid rgba(108,99,255,0.35); }
+        .overlay-title { color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+        .overlay-sub { font-size: 12px; opacity: 0.5; margin-bottom: 20px; line-height: 1.5; }
+        .overlay-btn { width: 100%; height: 44px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; font-size: 13px; cursor: pointer; margin-top: 16px; transition: 0.2s; }
+        .overlay-btn:hover { opacity: 0.85; }
+        .overlay-skip { display: block; font-size: 10px; opacity: 0.35; cursor: pointer; margin-top: 12px; letter-spacing: 0.5px; text-transform: uppercase; transition: 0.2s; }
+        .overlay-skip:hover { opacity: 0.6; }
+
+        /* ── Option C: Pre-Session Tokens ── */
+        .token-grid { display: flex; flex-wrap: wrap; gap: 7px; justify-content: center; margin-bottom: 10px; }
+        .token { padding: 7px 13px; border-radius: 20px; border: 1px solid var(--border); background: var(--input-bg); color: var(--text); font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.18s; opacity: 0.6; user-select: none; }
+        .token:hover { opacity: 1; border-color: var(--accent); }
+        .token.picked { border-color: var(--accent); background: rgba(108,99,255,0.18); opacity: 1; }
+        .token-note { font-size: 10px; opacity: 0.35; margin-bottom: 14px; letter-spacing: 0.3px; }
+
+        /* ── Option A: Post-Session Arc ── */
+        .arc-wrap { display: flex; flex-direction: column; align-items: center; margin: 4px 0 14px; }
+        .arc-labels { display: flex; justify-content: space-between; width: 220px; font-size: 9px; opacity: 0.4; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 5px; }
+        #arcReadout { font-size: 21px; font-weight: 700; color: var(--accent); margin-top: 12px; transition: 0.2s; }
+        #arcSub { font-size: 11px; opacity: 0.45; margin-top: 4px; min-height: 30px; padding: 0 12px; line-height: 1.5; }
+        .arc-slider { -webkit-appearance: none; width: 220px; height: 4px; border-radius: 4px; background: rgba(108,99,255,0.12); outline: none; margin-top: 16px; accent-color: var(--accent); }
+        .arc-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%; background: var(--accent); cursor: pointer; box-shadow: 0 0 8px rgba(108,99,255,0.5); }
+        .guest-note { font-size: 11px; color: var(--accent); opacity: 0.7; margin-top: 10px; cursor: pointer; text-decoration: underline; }
     </style>
 </head>
 <body data-theme="dark">
 
+    <!-- ── Guide Overlay ── -->
     <div id="guideOverlay">
         <div class="guide-box">
             <h2 style="color:var(--accent); margin-top:0;">Guide to ZenTune</h2>
-            <p style="font-size:14px; opacity:0.9; margin-bottom: 20px;">
-                From deep focus to deep sleep — soundscapes for every mood, every moment.</p>
+            <p style="font-size:14px; opacity:0.9; margin-bottom:20px;">From deep focus to deep sleep — soundscapes for every mood, every moment.</p>
             <ul>
                 <li><b>Mood:</b> Select a category to match your desired state of mind.</li>
                 <li><b>Focus Goal:</b> Set your target session time (minutes).</li>
-                <li><b>Calibrate:</b> Generate a curated soundscape to start.</li>
+                <li><b>Calibrate:</b> Describe how you feel, then generate your soundscape.</li>
                 <li><b>Insights:</b> View your session history, total time, and streaks.</li>
             </ul>
             <button onclick="closeGuide()" class="cal-btn">Got it</button>
         </div>
     </div>
 
+    <!-- ── Help FAB ── -->
     <div class="help-fab" onclick="openGuide()">i</div>
 
+    <!-- ── Pre-Session Overlay (Option C: Word Tokens) ── -->
+    <!--
+        BACKEND NOTE: No schema change needed for pre-session tokens.
+        Tokens are sent as `before_state` (comma-joined string) in the
+        existing save_feedback payload. See submitFeedback() below.
+    -->
+    <div class="overlay" id="preSessionOverlay">
+        <div class="overlay-box">
+            <div class="overlay-title">Before You Begin</div>
+            <div class="overlay-sub">How does your mind feel right now?<br>Pick up to 3 words — or skip to begin.</div>
+            <div class="token-note" id="tokenNote">0 of 3 selected</div>
+            <div class="token-grid" id="tokenGrid"></div>
+            <button class="overlay-btn" onclick="beginSession()">Begin Session</button>
+            <span class="overlay-skip" onclick="skipPreSession()">Skip →</span>
+        </div>
+    </div>
+
+    <!-- ── Post-Session Overlay (Option A: Arc Dial) ── -->
+    <!--
+        BACKEND NOTE: The feedback table needs two new columns added via
+        init_db() self-healing pattern in app.py:
+            ALTER TABLE feedback ADD COLUMN IF NOT EXISTS before_state TEXT;
+            ALTER TABLE feedback ADD COLUMN IF NOT EXISTS after_label TEXT;
+        The `rating` column is repurposed as the 0-100 arc value (INTEGER, no change needed).
+        The `comment` column is no longer used but kept for backwards compatibility.
+    -->
+    <div class="overlay" id="postSessionOverlay">
+        <div class="overlay-box">
+            <div class="overlay-title">Session Reflection</div>
+            <div class="overlay-sub">Tune to where your mind landed</div>
+            <div class="arc-wrap">
+                <!--
+                    Arc geometry:
+                    Endpoints (20,80) → (220,80), radius=130, sweep=0 (CCW = arch upward).
+                    Center at (120, 163.1). Top of arch at (120, 33.1). All within viewBox.
+                    Dot math: math_angle = 140.2° - val * 1.004°  (verified at 0/50/100)
+                    Arc length ≈ 228 units.
+                -->
+                <svg width="240" height="90" viewBox="0 0 240 90" style="overflow:visible">
+                    <defs>
+                        <linearGradient id="arcGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" stop-color="#4a4a8a"/>
+                            <stop offset="50%" stop-color="#9d96ff"/>
+                            <stop offset="100%" stop-color="#f0c060"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Track -->
+                    <path d="M 20 80 A 130 130 0 0 0 220 80" fill="none" stroke="rgba(108,99,255,0.1)" stroke-width="5" stroke-linecap="round"/>
+                    <!-- Fill -->
+                    <path id="arcFill" d="M 20 80 A 130 130 0 0 0 220 80" fill="none" stroke="url(#arcGrad)" stroke-width="5" stroke-linecap="round" stroke-dasharray="228" stroke-dashoffset="114"/>
+                    <!-- Dot -->
+                    <circle id="arcDot" cx="120" cy="33" r="6" fill="var(--accent)" style="filter:drop-shadow(0 0 4px rgba(108,99,255,0.7))"/>
+                </svg>
+                <div class="arc-labels"><span>Depleted</span><span>Neutral</span><span>Energised</span></div>
+                <input type="range" class="arc-slider" id="arcSlider" min="0" max="100" value="50" step="1" oninput="updateArc(this.value)">
+                <div id="arcReadout">Grounded</div>
+                <div id="arcSub">Balanced — the session held the space you needed</div>
+            </div>
+            <div id="guestFeedbackNote" style="display:none;">
+                <p class="guest-note" onclick="logout()">Sign in to save your reflections →</p>
+            </div>
+            <button class="overlay-btn" id="logReflectionBtn" onclick="submitFeedback()">Log Reflection</button>
+            <span class="overlay-skip" onclick="skipPostSession()">Skip</span>
+        </div>
+    </div>
+
+    <!-- ── Navigation ── -->
     <nav class="top-nav">
-    <div class="nav-group">
-        <div id="authContainer" class="auth-stack">
-            <button id="mainAuthBtn" onclick="stepOne()" class="login-btn">SIGN IN</button>
-            <div id="step1" class="auth-level">
-                <div class="connector-line"></div>
-                <div style="display:flex; gap:5px; width:100%;">
-                    <button class="login-btn mini-btn" onclick="stepTwo('new')">NEW</button>
-                    <button class="login-btn mini-btn" onclick="stepTwo('returning')">EXISTING</button>
+        <div class="nav-group">
+            <div id="authContainer" class="auth-stack">
+                <button id="mainAuthBtn" onclick="stepOne()" class="login-btn">SIGN IN</button>
+                <div id="step1" class="auth-level">
+                    <div class="connector-line"></div>
+                    <div style="display:flex; gap:5px; width:100%;">
+                        <button class="login-btn mini-btn" onclick="stepTwo('new')">NEW</button>
+                        <button class="login-btn mini-btn" onclick="stepTwo('returning')">EXISTING</button>
+                    </div>
+                </div>
+                <div id="step2" class="auth-level">
+                    <div class="connector-line"></div>
+                    <div id="authInputs">
+                        <input type="text" id="uidInput" placeholder="User ID">
+                        <input type="password" id="pwdInput" placeholder="Password">
+                        <button id="finalAuthBtn" onclick="handleAuth()" class="login-btn">GO</button>
+                        <span onclick="goBack()" style="font-size:9px; cursor:pointer; opacity:0.5; margin-top:5px; align-self:center;">← BACK</span>
+                    </div>
                 </div>
             </div>
-            <div id="step2" class="auth-level">
-                <div class="connector-line"></div>
-                <div id="authInputs">
-                    <input type="text" id="uidInput" placeholder="User ID">
-                    <input type="password" id="pwdInput" placeholder="Password">
-                    <button id="finalAuthBtn" onclick="handleAuth()" class="login-btn">GO</button>
-                    <span onclick="goBack()" style="font-size:9px; cursor:pointer; opacity:0.5; margin-top:5px; align-self:center;">← BACK</span>
+
+            <div id="userGreeting" style="display:none; text-align:center; width:100%;">
+                <div style="padding:15px 20px; border:1px solid var(--border); border-radius:20px; margin-bottom:20px; box-sizing:border-box; display:inline-block;">
+                    <span id="userLabel" style="font-size:13px; font-weight:bold; color:var(--text); display:block;">Welcome</span>
+                </div>
+                <div style="display:flex; gap:5px; width:140px; margin:0 auto;">
+                    <button onclick="toggleInsights()" id="insightToggleBtn" class="login-btn mini-btn" style="flex:1; padding:6px 5px; font-size:8px;">SHOW INSIGHTS</button>
+                    <button onclick="logout()" class="login-btn mini-btn" style="flex:1; padding:6px 5px; font-size:8px; background:rgba(255,77,77,0.15); border:1px solid rgba(255,77,77,0.3); color:#ff4d4d;">LOGOUT</button>
                 </div>
             </div>
         </div>
 
-        <div id="userGreeting" style="display:none; text-align: center; width: 100%;">
-            <div style="padding: 15px 20px; border: 1px solid var(--border); border-radius: 20px; margin-bottom: 20px; box-sizing: border-box; display: inline-block;">
-                <span id="userLabel" style="font-size: 13px; font-weight:bold; color: var(--text); text-transform: none; display:block;">Welcome, new</span>
-            </div>
-
-            <div style="display:flex; gap:5px; width:140px; margin: 0 auto; box-sizing: border-box; text-align: center;">
-                <button onclick="toggleInsights()" id="insightToggleBtn" class="login-btn mini-btn" style="flex: 1; padding: 6px 5px; font-size: 8px;">SHOW INSIGHTS</button>
-                
-                <button onclick="logout()" class="login-btn mini-btn" style="flex: 1; padding: 6px 5px; font-size: 8px; background: rgba(255, 77, 77, 0.15); border: 1px solid rgba(255, 77, 77, 0.3); color: #ff4d4d; opacity: 1;">LOGOUT</button>
+        <div class="settings-column">
+            <div class="theme-container">
+                Dark Mode
+                <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
             </div>
         </div>
-    </div>
+    </nav>
 
-    <div class="settings-column">
-        <div class="theme-container">
-            Dark Mode
-            <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
-        </div>
-    </div>
-</nav>
-
+    <!-- ── Stats Panel ── -->
     <aside class="stats-panel">
         <h3 style="margin-top:0; font-size:16px;">Insights</h3>
         <div class="stat-card"><div class="stat-val" id="sTotal">0</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Sessions</div></div>
@@ -196,15 +257,16 @@
         <div class="stat-card"><div class="stat-val" id="sStreak">0 Days</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Streak</div></div>
     </aside>
 
+    <!-- ── Main Card ── -->
     <main class="main-content">
         <div class="card" id="mainCard">
-            <h1 style="margin: 0 0 5px 0; font-size: 22px;">ZenTune</h1>
+            <h1 style="margin:0 0 5px 0; font-size:22px;">ZenTune</h1>
             <div class="timer" id="sessionTimer">SESSION: 00:00</div>
-            
+
             <div class="progress-container" id="goalBarContainer">
                 <div class="progress-fill" id="goalBarFill"></div>
             </div>
-            
+
             <select id="moodInput" onchange="updateAura()">
                 <optgroup label="Productivity">
                     <option value="focus">Focus & Concentration</option>
@@ -231,7 +293,7 @@
             </div>
 
             <button class="cal-btn" onclick="calibrate()" id="calBtn">Calibrate</button>
-            
+
             <div class="control-btns" id="sessionControls">
                 <button class="icon-btn" onclick="togglePlayPause()" id="playPauseBtn">Pause</button>
                 <button class="icon-btn" onclick="shuffle()">Shuffle</button>
@@ -249,16 +311,29 @@
         </div>
     </main>
 
+    <audio id="notificationSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
 <script>
     const API_BASE_URL = 'https://zentune.onrender.com';
-    let ytPlayer, trackPool = [], poolIdx = 0, timerInterval = null, seconds = 0;
-    let isPaused = false, userId = sessionStorage.getItem('zentune_id'), currentStep = 0, authMode = '';
 
-    window.onload = () => { 
+    // ── State ──
+    let ytPlayer, trackPool = [], poolIdx = 0, timerInterval = null, seconds = 0;
+    let isPaused = false;
+    let userId = sessionStorage.getItem('zentune_id');
+    let currentStep = 0, authMode = '';
+    let preSessionTokens = [];     // populated by Option C pre-session overlay
+    let currentArcValue = 50;      // 0-100 arc slider value
+    let currentArcLabel = 'Grounded'; // current arc state label
+
+    // ── Init ──
+    window.onload = () => {
         if (userId) { showUser(userId); } else { openGuide(); }
-        updateAura(); 
+        updateAura();
+        buildTokenGrid();
+        updateArc(50);
     };
 
+    // ── YouTube ──
     function onYouTubeIframeAPIReady() {
         ytPlayer = new YT.Player('player', {
             height: '100%', width: '100%',
@@ -270,38 +345,66 @@
     function onPlayerStateChange(event) {
         if (event.data == YT.PlayerState.PLAYING) {
             isPaused = false;
-            document.getElementById('playPauseBtn').innerText = "Pause";
+            document.getElementById('playPauseBtn').innerText = 'Pause';
             runTimer();
         } else if (event.data == YT.PlayerState.PAUSED) {
             isPaused = true;
-            document.getElementById('playPauseBtn').innerText = "Play";
+            document.getElementById('playPauseBtn').innerText = 'Play';
             clearInterval(timerInterval);
         } else if (event.data == YT.PlayerState.ENDED) {
-            let goalSeconds = (parseInt(document.getElementById('timeGoal').value) || 25) * 60;
-            if (seconds < goalSeconds) shuffle(); else stopSession();
+            const goalSeconds = (parseInt(document.getElementById('timeGoal').value) || 25) * 60;
+            if (seconds < goalSeconds) shuffle(); else finishSession();
         }
     }
 
+    // ── Timer ──
     function runTimer() {
         clearInterval(timerInterval);
         document.getElementById('goalBarContainer').style.display = 'block';
         timerInterval = setInterval(() => {
             if (isPaused) return;
             seconds++;
-            let goalSeconds = (parseInt(document.getElementById('timeGoal').value) || 25) * 60;
-            let m = Math.floor(seconds / 60), s = seconds % 60;
-            document.getElementById('sessionTimer').innerText = `SESSION: ${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-            document.getElementById('goalBarFill').style.width = Math.min((seconds / goalSeconds) * 100, 100) + "%";
+            const goalSeconds = (parseInt(document.getElementById('timeGoal').value) || 25) * 60;
+            const m = Math.floor(seconds / 60), s = seconds % 60;
+            document.getElementById('sessionTimer').innerText = `SESSION: ${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
+            document.getElementById('goalBarFill').style.width = Math.min((seconds / goalSeconds) * 100, 100) + '%';
             if (seconds >= goalSeconds) finishSession();
         }, 1000);
     }
 
+    // ── Session Lifecycle ──
+
+    // Called when goal timer completes
     function finishSession() {
         clearInterval(timerInterval);
         if (ytPlayer) ytPlayer.pauseVideo();
         document.getElementById('notificationSound').play().catch(() => {});
-        saveSessionToDatabase();
-        alert("Session Complete! Great job.");
+        saveSessionToDatabase();                       // reads `seconds` before any reset
+        setTimeout(() => showPostSessionOverlay(), 800);
+        // Note: resetSessionUI() is called when the post-session overlay is dismissed
+    }
+
+    // Called on manual Stop button — only prompts reflection if ≥60s elapsed
+    function stopSession() {
+        if (ytPlayer) ytPlayer.stopVideo();
+        clearInterval(timerInterval);
+        const elapsed = seconds;   // capture before resetSessionUI zeros it
+        resetSessionUI();
+        if (elapsed >= 60) {
+            setTimeout(() => showPostSessionOverlay(), 300);
+        }
+    }
+
+    // Resets all session UI elements and the seconds counter
+    function resetSessionUI() {
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('sessionControls').style.display = 'none';
+        document.getElementById('volContainer').style.display = 'none';
+        document.getElementById('trackTitle').innerText = '';
+        document.getElementById('sessionTimer').innerText = 'SESSION: 00:00';
+        document.getElementById('goalBarFill').style.width = '0%';
+        document.getElementById('goalBarContainer').style.display = 'none';
+        seconds = 0;
     }
 
     async function saveSessionToDatabase() {
@@ -313,64 +416,209 @@
                 body: JSON.stringify({ user_id: userId, duration: seconds, mood: moodText })
             });
             fetchStats();
-        } catch (e) { console.error("Save error:", e); }
+        } catch (e) { console.error('Save session error:', e); }
     }
 
-    async function calibrate() {
+    // ── Calibrate → Pre-Session Overlay → Begin Session ──
+
+    // Step 1: clicking Calibrate opens the pre-session token overlay
+    function calibrate() {
+        preSessionTokens = [];
+        document.querySelectorAll('.token').forEach(t => t.classList.remove('picked'));
+        document.getElementById('tokenNote').innerText = '0 of 3 selected';
+        document.getElementById('preSessionOverlay').style.display = 'flex';
+    }
+
+    // Skip pre-session overlay (tokens left empty)
+    function skipPreSession() {
+        preSessionTokens = [];
+        document.getElementById('preSessionOverlay').style.display = 'none';
+        beginSession();
+    }
+
+    // Step 2: actual calibration fetch, called after overlay is dismissed
+    async function beginSession() {
+        document.getElementById('preSessionOverlay').style.display = 'none';
         const mood = document.getElementById('moodInput').value;
         const btn = document.getElementById('calBtn');
-        btn.innerText = "Analyzing..."; btn.disabled = true;
+        btn.innerText = 'Analyzing...'; btn.disabled = true;
         try {
             const res = await fetch(`${API_BASE_URL}/identify`, {
-                method:'POST', headers:{'Content-Type':'application/json'}, 
-                body:JSON.stringify({mood:mood, user_id: userId || "guest"})
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ mood, user_id: userId || 'guest' })
             });
             const data = await res.json();
-            if(data.status==='success' && data.tracks.length > 0) { 
-                trackPool=data.tracks; poolIdx=0; playTrack(0);
-                document.getElementById('result').style.display='block';
-                document.getElementById('sessionControls').style.display='flex';
-                document.getElementById('volContainer').style.display='flex';
+            if (data.status === 'success' && data.tracks.length > 0) {
+                trackPool = data.tracks; poolIdx = 0; playTrack(0);
+                document.getElementById('result').style.display = 'block';
+                document.getElementById('sessionControls').style.display = 'flex';
+                document.getElementById('volContainer').style.display = 'flex';
                 clearInterval(timerInterval); seconds = 0;
             }
-        } catch(e) { console.error(e); }
-        btn.innerText = "Calibrate"; btn.disabled = false;
+        } catch (e) { console.error('Calibrate error:', e); }
+        btn.innerText = 'Calibrate'; btn.disabled = false;
     }
 
     function playTrack(idx) {
         poolIdx = idx;
-        let vidId = trackPool[idx].preview_url.includes('v=') ? trackPool[idx].preview_url.split('v=')[1].split('&')[0] : trackPool[idx].preview_url.split('/').pop();
+        const vidId = trackPool[idx].preview_url.includes('v=')
+            ? trackPool[idx].preview_url.split('v=')[1].split('&')[0]
+            : trackPool[idx].preview_url.split('/').pop();
         ytPlayer.loadVideoById(vidId);
         document.getElementById('trackTitle').innerText = trackPool[idx].title;
     }
 
     function togglePlayPause() { if (isPaused) ytPlayer.playVideo(); else ytPlayer.pauseVideo(); }
     function shuffle() { if (trackPool.length > 0) { poolIdx = (poolIdx + 1) % trackPool.length; playTrack(poolIdx); } }
-    function stopSession() {
-        if(ytPlayer) ytPlayer.stopVideo();
-        clearInterval(timerInterval);
-        document.getElementById('result').style.display = 'none';
-        document.getElementById('sessionControls').style.display = 'none';
-        document.getElementById('volContainer').style.display = 'none';
-        document.getElementById('trackTitle').innerText = "";
-        document.getElementById('sessionTimer').innerText = "SESSION: 00:00";
-        document.getElementById('goalBarFill').style.width = "0%";
-    }
-
     function changeVolume(val) { if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(val); }
 
-    /* Auth Logic */
-    function stepOne() { document.getElementById('mainAuthBtn').classList.add('dimmed'); document.getElementById('step1').classList.add('active'); currentStep = 1; }
-    function stepTwo(mode) { authMode = mode; document.getElementById('step1').classList.add('dimmed'); document.getElementById('step2').classList.add('active'); document.getElementById('finalAuthBtn').innerText = (mode === 'new') ? "REGISTER" : "LOGIN"; currentStep = 2; }
-    function goBack() { 
-        if (currentStep === 2) { document.getElementById('step2').classList.remove('active'); document.getElementById('step1').classList.remove('dimmed'); currentStep = 1; } 
-        else { document.getElementById('step1').classList.remove('active'); document.getElementById('mainAuthBtn').classList.remove('dimmed'); currentStep = 0; }
+    // ── Option C: Pre-Session Word Tokens ──
+    const PRE_TOKENS = [
+        'Scattered', 'Restless', 'Groggy', 'Flat', 'Anxious',
+        'Overwhelmed', 'Drained', 'Heavy', 'Wired', 'Tense',
+        'Foggy', 'Distracted', 'Low', 'Uninspired', 'Numb', 'Agitated'
+    ];
+
+    function buildTokenGrid() {
+        const grid = document.getElementById('tokenGrid');
+        PRE_TOKENS.forEach(word => {
+            const el = document.createElement('div');
+            el.className = 'token';
+            el.innerText = word;
+            el.onclick = () => {
+                if (el.classList.contains('picked')) {
+                    el.classList.remove('picked');
+                    preSessionTokens = preSessionTokens.filter(t => t !== word);
+                } else if (preSessionTokens.length < 3) {
+                    el.classList.add('picked');
+                    preSessionTokens.push(word);
+                }
+                const n = preSessionTokens.length;
+                document.getElementById('tokenNote').innerText =
+                    n === 3 ? 'Max 3 selected' : `${n} of 3 selected`;
+            };
+            grid.appendChild(el);
+        });
+    }
+
+    // ── Option A: Post-Session Arc Dial ──
+    const ARC_STATES = [
+        { max: 14,  label: 'Drained',   sub: "The session didn't quite land — try a different frequency" },
+        { max: 29,  label: 'Foggy',     sub: "Still finding your ground — a shorter session might help" },
+        { max: 44,  label: 'Rippling',  sub: "A gentle shift occurred — something moved" },
+        { max: 60,  label: 'Grounded',  sub: "Balanced — the session held the space you needed" },
+        { max: 74,  label: 'Flowing',   sub: "Good resonance — you found your rhythm" },
+        { max: 89,  label: 'Sprouting', sub: "Strong connection — your mind settled and cleared" },
+        { max: 100, label: 'Bloom',     sub: "Perfect harmony — you reached deep flow" }
+    ];
+
+    // Arc geometry constants (pre-computed, verified at val 0/50/100)
+    // Arc: M 20 80 A 130 130 0 0 0 220 80  (CCW, arch upward)
+    // Center: (120, 163.1)  Arc length: 228
+    const ARC_CX = 120, ARC_CY = 163.1, ARC_R = 130, ARC_LEN = 228;
+    const ARC_START_DEG = 140.2, ARC_SPAN_DEG = 100.4;
+
+    function updateArc(val) {
+        val = parseInt(val);
+        currentArcValue = val;
+
+        // Dot position (stays on arc at all values)
+        const mathAngleDeg = ARC_START_DEG - (val / 100) * ARC_SPAN_DEG;
+        const rad = mathAngleDeg * Math.PI / 180;
+        const dotX = Math.round(ARC_CX + ARC_R * Math.cos(rad));
+        const dotY = Math.round(ARC_CY - ARC_R * Math.sin(rad));
+        document.getElementById('arcDot').setAttribute('cx', dotX);
+        document.getElementById('arcDot').setAttribute('cy', dotY);
+
+        // Fill
+        document.getElementById('arcFill').setAttribute('stroke-dashoffset', ARC_LEN * (1 - val / 100));
+
+        // Label
+        const state = ARC_STATES.find(s => val <= s.max) || ARC_STATES[ARC_STATES.length - 1];
+        currentArcLabel = state.label;
+        document.getElementById('arcReadout').innerText = state.label;
+        document.getElementById('arcSub').innerText = state.sub;
+    }
+
+    function showPostSessionOverlay() {
+        // Reset arc to neutral each time
+        document.getElementById('arcSlider').value = 50;
+        updateArc(50);
+
+        // Guest guard: show note, change button label so nothing is saved
+        const isGuest = !userId || userId === 'guest';
+        document.getElementById('guestFeedbackNote').style.display = isGuest ? 'block' : 'none';
+        document.getElementById('logReflectionBtn').innerText = isGuest ? 'Close' : 'Log Reflection';
+
+        document.getElementById('postSessionOverlay').style.display = 'flex';
+    }
+
+    async function submitFeedback() {
+        document.getElementById('postSessionOverlay').style.display = 'none';
+        resetSessionUI();
+
+        // Guests: nothing to save
+        if (!userId || userId === 'guest') {
+            preSessionTokens = [];
+            return;
+        }
+
+        const moodContext = document.getElementById('moodInput').options[document.getElementById('moodInput').selectedIndex].text;
+        try {
+            await fetch(`${API_BASE_URL}/save_feedback`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    user_id:      userId,
+                    rating:       currentArcValue,           // 0–100 arc value  (existing column)
+                    after_label:  currentArcLabel,           // e.g. "Flowing"   (new column — see backend note)
+                    before_state: preSessionTokens.join(', '), // e.g. "Anxious, Flat" (new column)
+                    mood_context: moodContext,
+                    comment:      ''                         // kept for backwards compatibility
+                })
+            });
+        } catch (e) { console.error('Feedback error:', e); }
+
+        preSessionTokens = [];
+        fetchStats();
+    }
+
+    function skipPostSession() {
+        document.getElementById('postSessionOverlay').style.display = 'none';
+        resetSessionUI();
+        preSessionTokens = [];
+    }
+
+    // ── Auth ──
+    function stepOne() {
+        document.getElementById('mainAuthBtn').classList.add('dimmed');
+        document.getElementById('step1').classList.add('active');
+        currentStep = 1;
+    }
+    function stepTwo(mode) {
+        authMode = mode;
+        document.getElementById('step1').classList.add('dimmed');
+        document.getElementById('step2').classList.add('active');
+        document.getElementById('finalAuthBtn').innerText = mode === 'new' ? 'REGISTER' : 'LOGIN';
+        currentStep = 2;
+    }
+    function goBack() {
+        if (currentStep === 2) {
+            document.getElementById('step2').classList.remove('active');
+            document.getElementById('step1').classList.remove('dimmed');
+            currentStep = 1;
+        } else {
+            document.getElementById('step1').classList.remove('active');
+            document.getElementById('mainAuthBtn').classList.remove('dimmed');
+            currentStep = 0;
+        }
     }
 
     async function handleAuth() {
-        const id = document.getElementById('uidInput').value.trim(), pwd = document.getElementById('pwdInput').value.trim();
-        if(!id || !pwd) return alert("Fill all fields");
-        const endpoint = (authMode === 'new') ? '/register' : '/auth';
+        const id = document.getElementById('uidInput').value.trim();
+        const pwd = document.getElementById('pwdInput').value.trim();
+        if (!id || !pwd) return alert('Fill all fields');
+        const endpoint = authMode === 'new' ? '/register' : '/auth';
         try {
             const res = await fetch(`${API_BASE_URL}${endpoint}`, {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
@@ -378,125 +626,56 @@
             });
             const data = await res.json();
             if (res.status === 201 || data.status === 'success') {
-                if (authMode === 'new') { alert("Account created! Please Sign In."); location.reload(); } 
+                if (authMode === 'new') { alert('Account created! Please Sign In.'); location.reload(); }
                 else { userId = id; sessionStorage.setItem('zentune_id', userId); showUser(userId); }
-            } else { alert(data.message || "Error"); }
-        } catch (e) { alert("Server Error"); }
+            } else { alert(data.message || 'Error'); }
+        } catch (e) { alert('Server Error'); }
     }
 
-    function showUser(id) { 
+    function showUser(id) {
         userId = id;
         document.getElementById('authContainer').style.display = 'none';
-        document.getElementById('userGreeting').style.display = 'block'; 
-        document.getElementById('userLabel').innerText = `Welcome, ${id}`; 
-        fetchStats(); 
+        document.getElementById('userGreeting').style.display = 'block';
+        document.getElementById('userLabel').innerText = `Welcome, ${id}`;
+        fetchStats();
     }
 
     async function fetchStats() {
-        if(!userId) return;
+        if (!userId) return;
         try {
             const res = await fetch(`${API_BASE_URL}/stats/${userId}`);
             const d = await res.json();
-            document.getElementById('sTotal').innerText = d.total ?? "0";
-            document.getElementById('sTime').innerText = d.total_time ?? "0h 0m";
-            document.getElementById('sMood').innerText = d.dominant ?? "None";
-            document.getElementById('sStreak').innerText = d.streak ?? "0 Days";
-        } catch(e) { console.error("Stats Error:", e); }
+            document.getElementById('sTotal').innerText = d.total ?? '0';
+            document.getElementById('sTime').innerText = d.total_time ?? '0h 0m';
+            document.getElementById('sMood').innerText = d.dominant ?? 'None';
+            document.getElementById('sStreak').innerText = d.streak ?? '0 Days';
+        } catch (e) { console.error('Stats error:', e); }
     }
 
-    let selectedRating = 5; 
-
-function setZenRating(val, el) {
-    selectedRating = val;
-    document.querySelectorAll('.zen-btn').forEach(btn => btn.classList.remove('selected'));
-    el.classList.add('selected');
-}
-
-// Locate your existing finishSession() and UPDATE IT to this:
-function finishSession() {
-    clearInterval(timerInterval);
-    if (ytPlayer) ytPlayer.pauseVideo();
-    document.getElementById('notificationSound').play().catch(() => {});
-    
-    saveSessionToDatabase(); // Existing logic
-    
-    // Show the reflection window after a 1-second pause
-    setTimeout(() => {
-        document.getElementById('feedbackOverlay').style.display = 'flex';
-    }, 1000);
-}
-
-        // Add this new function to handle the database logging
-        async function submitFeedback() {
-            const comment = document.getElementById('feedbackText').value;
-            const moodContext = document.getElementById('moodInput').options[document.getElementById('moodInput').selectedIndex].text;
-            
-            try {
-                await fetch(`${API_BASE_URL}/save_feedback`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_id: userId || 'guest',
-                        rating: selectedRating,
-                        comment: comment,
-                        mood_context: moodContext
-                    })
-                });
-                document.getElementById('feedbackOverlay').style.display = 'none';
-                document.getElementById('feedbackText').value = ""; // Clear for next time
-            } catch (e) {
-                console.error("Feedback error:", e);
-                document.getElementById('feedbackOverlay').style.display = 'none';
-            }
-        }
-    
+    // ── UI Helpers ──
     function toggleInsights() {
         document.body.classList.toggle('show-insights');
-        document.getElementById('insightToggleBtn').innerText = document.body.classList.contains('show-insights') ? "HIDE INSIGHTS" : "SHOW INSIGHTS";
+        document.getElementById('insightToggleBtn').innerText =
+            document.body.classList.contains('show-insights') ? 'HIDE INSIGHTS' : 'SHOW INSIGHTS';
     }
     function toggleTheme() { document.body.dataset.theme = document.getElementById('themeTog').checked ? 'dark' : ''; }
-    function adjustGoal(a) { let i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value) + a); }
+    function adjustGoal(a) { const i = document.getElementById('timeGoal'); i.value = Math.max(1, parseInt(i.value) + a); }
     function closeGuide() { document.getElementById('guideOverlay').style.display = 'none'; }
-    function openGuide() { document.getElementById('guideOverlay').style.display = 'flex'; }
+    function openGuide()  { document.getElementById('guideOverlay').style.display = 'flex'; }
     function logout() { sessionStorage.removeItem('zentune_id'); location.reload(); }
 
     function updateAura() {
         const mood = document.getElementById('moodInput').value;
-        const colors = { "focus": "#6c63ff", "deepwork": "#4a4a8a", "kickstart": "#ffcc00", "unmotivated": "#ff6600", "happy": "#ffeb3b", "anxious": "#81c784", "stressed": "#4db6ac", "socially-drained": "#90a4ae", "heartbroken": "#f06292", "sleepy": "#5c6bc0" };
+        const colors = {
+            "focus": "#6c63ff", "deepwork": "#4a4a8a", "kickstart": "#ffcc00",
+            "unmotivated": "#ff6600", "happy": "#ffeb3b", "anxious": "#81c784",
+            "stressed": "#4db6ac", "socially-drained": "#90a4ae",
+            "heartbroken": "#f06292", "sleepy": "#5c6bc0"
+        };
         const color = colors[mood] || '#6c63ff';
-        document.documentElement.style.setProperty('--aura', color + '4D'); 
+        document.documentElement.style.setProperty('--aura', color + '4D');
         document.documentElement.style.setProperty('--accent', color);
     }
 </script>
-<audio id="notificationSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
-
-    <div id="feedbackOverlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:6000; display:none; justify-content:center; align-items:center; backdrop-filter:blur(8px);">
-    <div class="guide-box" style="border-color: var(--accent); max-width: 420px; width: 90%; background: var(--card); padding: 30px; border-radius: 24px; text-align: center; border: 1px solid var(--accent);">
-        <h3 style="color:var(--accent); margin-top:0; letter-spacing: 1px; font-size: 18px;">SESSION REFLECTION</h3>
-        <p style="font-size:12px; opacity:0.8; margin-bottom: 20px;">How does your mind feel after this soundscape?</p>
-        
-        <div id="zenRatingContainer" style="display: flex; justify-content: space-between; margin: 20px 0; gap: 8px;">
-            <button class="zen-btn" onclick="setZenRating(1, this)" title="Cloudy: Unclear; the audio didn't match my intent.">
-                <span>☁️</span><span>Cloudy</span>
-            </button>
-            <button class="zen-btn" onclick="setZenRating(2, this)" title="Ripples: Distracted; the soundscape didn't quite settle.">
-                <span>💧</span><span>Ripples</span>
-            </button>
-            <button class="zen-btn" onclick="setZenRating(3, this)" title="Grounded: Balanced; it supported my task well.">
-                <span>🪵</span><span>Grounded</span>
-            </button>
-            <button class="zen-btn" onclick="setZenRating(4, this)" title="Sprouting: Very helpful; my mind felt settled.">
-                <span>🌿</span><span>Sprouting</span>
-            </button>
-            <button class="zen-btn" onclick="setZenRating(5, this)" title="Bloom: Perfect harmony; I reached deep flow.">
-                <span>🪷</span><span>Bloom</span>
-            </button>
-        </div>
-
-        <textarea id="feedbackText" placeholder="Optional thoughts..." style="width:100%; height:80px; border-radius:12px; padding:12px; background:var(--input-bg); color:var(--text); border:1px solid var(--border); font-family:inherit; font-size:13px; box-sizing:border-box; outline:none; resize:none; margin-bottom: 15px;"></textarea>
-        <button onclick="submitFeedback()" class="cal-btn" style="width: 100%; height: 44px; background: var(--accent); color: white; border: none; border-radius: 12px; font-weight: 700; cursor: pointer;">Log Reflection</button>
-    </div>
-</div>
-    
 </body>
 </html>
