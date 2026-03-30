@@ -330,6 +330,16 @@ def save_feedback():
         cur.close()
         conn.close()
 
+# ... All your main routes ...
+
+@app.route('/health')
+def health_check():
+    return jsonify({"status": "online"}), 200
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
 init_db()
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 10000))
