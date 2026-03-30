@@ -65,7 +65,19 @@ def init_db():
             )
         ''')
 
-        # 3. SELF-HEALING: Check for both 'mood' and 'frequency'
+        # 3. Feedback Table (NEW)
+        cur.execute('''
+            CREATE TABLE IF NOT EXISTS feedback (
+                id SERIAL PRIMARY KEY,
+                user_id TEXT,
+                rating INTEGER,
+                comment TEXT,
+                mood_context TEXT,
+                timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+        # 4. SELF-HEALING: Check for both 'mood' and 'frequency'
         # This handles cases where the table was created in an older version of your app
         columns_to_ensure = ['mood', 'frequency']
         for col in columns_to_ensure:
@@ -291,6 +303,32 @@ def save_session():
         cur.close()
         conn.close()
 
+@app.route('/save_feedback', methods=['POST'])
+def save_feedback():
+    data = request.get_json()
+    user_id = data.get('user_id', 'guest')
+    rating = data.get('rating')
+    comment = data.get('comment')
+    mood_context = data.get('mood_context')
+
+    conn = get_db_connection()
+    if not conn: 
+        return jsonify({"status": "error", "message": "Database connection failed"}), 500
+    
+    try:
+        cur = conn.cursor()
+        cur.execute("""
+            INSERT INTO feedback (user_id, rating, comment, mood_context, timestamp) 
+            VALUES (%s, %s, %s, %s, now())
+        """, (user_id, rating, comment, mood_context))
+        conn.commit()
+        return jsonify({"status": "success", "message": "Feedback recorded"}), 201
+    except Exception as e:
+        print(f"Feedback Save Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
+    finally:
+        cur.close()
+        conn.close()
 
 init_db()
 if __name__ == '__main__':
