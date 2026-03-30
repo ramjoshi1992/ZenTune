@@ -437,26 +437,48 @@ try {
         }
     }
 
-    function stopSession() {
-    if(ytPlayer) ytPlayer.stopVideo();
-    clearInterval(timerInterval);
-    
-    // NEW: Ask to save if they've done at least 1 minute of work
-    if (seconds >= 60) {
-        if (confirm("Save your progress so far?")) {
-            saveSessionToDatabase();
-        }
-    }
+    async function stopSession() {
+        if(ytPlayer) ytPlayer.stopVideo();
+        clearInterval(timerInterval);
+        
+        // 1. Logic to save progress if the user worked for at least 1 minute
+        if (seconds >= 60) {
+            if (confirm("Save your progress so far?")) {
+                const moodSelect = document.getElementById('moodInput');
+                // This captures the "Deep Flow Mode" text you want for Core Frequency
+                const readableMood = moodSelect.options[moodSelect.selectedIndex].text;
 
-    document.getElementById('result').style.display = 'none';
-    document.getElementById('sessionControls').style.display = 'none';
-    document.getElementById('volContainer').style.display = 'none';
-    document.getElementById('trackTitle').innerText = "";
-    document.getElementById('sessionTimer').innerText = "SESSION: 00:00";
-    document.getElementById('goalBarFill').style.width = "0%";
-    
-    seconds = 0; // Reset after checking if we should save
-}
+                try {
+                    const res = await fetch(`${API_BASE_URL}/save_session`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            user_id: userId,
+                            duration: seconds,
+                            mood: readableMood
+                        })
+                    });
+
+                    if (res.ok) {
+                        console.log("Session saved successfully");
+                        fetchStats(); // Updates your Insights sidebar immediately
+                    }
+                } catch (e) {
+                    console.error("Failed to save session:", e);
+                }
+            }
+        }
+
+    // 2. Reset the UI elements (Same as your previous code)
+        document.getElementById('result').style.display = 'none';
+        document.getElementById('sessionControls').style.display = 'none';
+        document.getElementById('volContainer').style.display = 'none';
+        document.getElementById('trackTitle').innerText = "";
+        document.getElementById('sessionTimer').innerText = "SESSION: 00:00";
+        document.getElementById('goalBarFill').style.width = "0%";
+        
+        seconds = 0; // Reset the timer for the next session
+    }
 
     function changeVolume(val) { if (ytPlayer && ytPlayer.setVolume) ytPlayer.setVolume(val); }
 
@@ -544,11 +566,12 @@ async function handleAuth() {
         try {
             const res = await fetch(`${API_BASE_URL}/stats/${userId}`);
             const d = await res.json();
-            document.getElementById('sTotal').innerText = d.total ?? "0";
+            
+            // Map the API data to your HTML IDs correctly
+            document.getElementById('sTotal').innerText = d.total_sessions ?? "0";
             document.getElementById('sTime').innerText = d.total_time ?? "0h 0m";
-            document.getElementById('sMood').innerText = d.dominant ?? "None";
-            document.getElementById('sFreq').innerText = d.frequency ?? "N/A";
-            document.getElementById('sStreak').innerText = d.streak ?? "0 Days";
+            document.getElementById('sMood').innerText = d.dominant_mood ?? "None"; // Fixed ID and Key
+            document.getElementById('sStreak').innerText = (d.streak ?? "0") + " Days";
         } catch(e) { console.error("Stats Error:", e); }
     }
 
