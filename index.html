@@ -669,8 +669,32 @@ async function handleAuth() {
         document.documentElement.style.setProperty('--accent', color);
     }
 
-    function logout() { sessionStorage.removeItem('zentune_id'); location.reload(); }
-    </script>
+    function logout() { 
+        sessionStorage.removeItem('zentune_id'); 
+        location.reload(); 
+    }
+
+    // --- KEEP-ALIVE HEARTBEAT ---
+    // Pings the server every 5 minutes to prevent it from spinning down (sleeping)
+    function startHeartbeat() {
+        setInterval(async () => {
+            try {
+                const res = await fetch(`${API_BASE_URL}/reset-password?hb=${Date.now()}`, { mode: 'cors' });
+                if (res.ok) {
+                    console.log("Heartbeat: Server kept awake.");
+                    // Optional: keep the dot green
+                    document.getElementById('status-dot').style.background = "#4bffb0";
+                    document.getElementById('status-text').innerText = "Server: Online";
+                }
+            } catch (e) {
+                console.warn("Heartbeat failed.");
+            }
+        }, 300000); // 5 minutes
+    }
+
+    // Start the heartbeat immediately
+    startHeartbeat();
+</script>
        
     <div id="server-status-container">
             <div id="status-dot"></div>
