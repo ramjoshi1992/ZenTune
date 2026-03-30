@@ -369,29 +369,28 @@ const moodSelect = document.getElementById('moodInput');
 const readableMood = moodSelect.options[moodSelect.selectedIndex].text;
 
 try {
-    const res = await fetch(`${API_BASE_URL}/save_session`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            user_id: userId,
-            duration: seconds,
-            mood: readableMood // Must match the variable name exactly (case-sensitive!)
-        })
-    });
-    // ... rest of your logic
-} catch (err) {
-    console.error("Save failed:", err);
-}
+        const res = await fetch(`${API_BASE_URL}/save_session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId,
+                duration: seconds,
+                mood: readableMood
+            })
+        });
 
         if (res.ok) {
             console.log("Session saved successfully");
-            seconds = 0; // <--- ADD THIS to prevent double-saving
+            seconds = 0; // Prevent double-saving
             fetchStats();
+        } else {
+            console.warn("Server responded with an error during save.");
         }
+
     } catch (e) {
         console.error("Failed to save session:", e);
     }
-}
+} // Final closing brace for the function
 
     async function calibrate() {
         const mood = document.getElementById('moodInput').value;
