@@ -196,7 +196,7 @@
         <div class="stat-card"><div class="stat-val" id="sTotal">0</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Sessions</div></div>
         <div class="stat-card"><div class="stat-val" id="sTime">0h 0m</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Total Focus Time</div></div>
         <div class="stat-card"><div class="stat-val" id="sMood">Initial Scan</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Core Frequency</div></div>
-        <div class="stat-card"><div class="stat-val" id="sStreak">0 Days</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Streak</div></div>
+        <div class="stat-card"><div class="stat-val" id="sStreak">0</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Streak</div></div>
     </aside>
 
     <main class="main-content">
@@ -567,11 +567,13 @@ async function handleAuth() {
             const res = await fetch(`${API_BASE_URL}/stats/${userId}`);
             const d = await res.json();
             
-            // Map the API data to your HTML IDs correctly
-            document.getElementById('sTotal').innerText = d.total_sessions ?? "0";
+            // These keys must match the Python jsonify keys exactly
+            document.getElementById('sTotal').innerText = d.total ?? "0";
             document.getElementById('sTime').innerText = d.total_time ?? "0h 0m";
-            document.getElementById('sMood').innerText = d.dominant_mood ?? "None"; // Fixed ID and Key
-            document.getElementById('sStreak').innerText = (d.streak ?? "0") + " Days";
+            document.getElementById('sMood').innerText = d.dominant ?? "None";
+            
+            // Clean up the "1 Days Days" text bug by removing the extra "Days" in HTML
+            document.getElementById('sStreak').innerText = d.streak ?? "0 Days";
         } catch(e) { console.error("Stats Error:", e); }
     }
 
