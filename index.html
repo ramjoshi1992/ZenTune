@@ -86,6 +86,36 @@
         .icon-btn { flex: 1; background: #4a4a8a; border: none; border-radius: var(--radius-md); color: white; padding: 10px; cursor: pointer; font-size: 14px; }
         .stop-btn { background: #ff4d4d; }
 
+        /* Add this around line 87 */
+        #server-status-container {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            z-index: 2000;
+            pointer-events: none; /* Keeps it from blocking clicks */
+        }
+
+        #status-dot {
+            width: 8px;
+            height: 8px;
+            background: #ff4b4b;
+            border-radius: 50%;
+            box-shadow: 0 0 8px rgba(255, 75, 75, 0.6);
+            transition: all 0.4s ease;
+        }
+
+        #status-text {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            color: var(--text);
+            opacity: 0.6;
+        }
+        
         .video-box { width: 100%; margin: 15px auto 0; aspect-ratio: 16/9; border-radius: var(--radius-md); overflow: hidden; display: none; background: #000; }
         
         .settings-column { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; padding-top: 0; }
@@ -205,20 +235,9 @@
         <div class="stat-card"><div class="stat-val" id="sStreak">0</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Streak</div></div>
     </aside>
 
-    <div id="profile-section">
-    <h2 id="welcome-text">Welcome, new</h2>
     
-    <div id="server-status-container" style="display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 0.8rem; opacity: 0.8;">
-        <div id="status-dot" style="width: 8px; height: 8px; background: #ff4b4b; border-radius: 50%; box-shadow: 0 0 5px #ff4b4b; transition: 0.3s;"></div>
-        <span id="status-text" style="color: white; font-family: sans-serif;">Server: Sleeping</span>
-    </div>
 
-    <div class="profile-actions">
-        <button onclick="toggleInsights()" class="btn-secondary">HIDE INSIGHTS</button>
-        <button onclick="logout()" class="btn-logout">LOGOUT</button>
-    </div>
-</div>
-    
+       
     <main class="main-content">
         <div class="card" id="mainCard">
             <h1 style="margin: 0 0 5px 0; font-size: 22px;">ZenTune</h1>
@@ -590,38 +609,35 @@ async function handleAuth() {
 
     function showUser(id) { 
     userId = id;
-    sessionStorage.setItem('zentune_id', id);
-
-    // Hide all login UI
+    sessionStorage.setItem('zentune_id', userId);
+    
+    // Hide the auth stack
     const authBox = document.getElementById('authContainer');
     if (authBox) authBox.style.display = 'none';
-
-    // Show Greeting and Stats
+    
+    // Show the greeting in the top nav
     document.getElementById('userGreeting').style.display = 'block'; 
     document.getElementById('userLabel').innerText = `Welcome, ${id}`; 
     
-    // Update the "Welcome, new" text in the middle if you keep that section
-    const welcomeText = document.getElementById('welcome-text');
-    if(welcomeText) welcomeText.innerText = `Welcome, ${id}`;
-
     fetchStats(); 
 }
 
     async function fetchStats() {
-        if(!userId) return;
-        try {
-            const res = await fetch(`${API_BASE_URL}/stats/${userId}`);
-            const d = await res.json();
-            
-            // These keys must match the Python jsonify keys exactly
-            document.getElementById('sTotal').innerText = d.total ?? "0";
-            document.getElementById('sTime').innerText = d.total_time ?? "0h 0m";
-            document.getElementById('sMood').innerText = d.dominant ?? "None";
-            
-            // Clean up the "1 Days Days" text bug by removing the extra "Days" in HTML
-            document.getElementById('sStreak').innerText = d.streak ?? "0 Days";
-        } catch(e) { console.error("Stats Error:", e); }
-    }
+    if(!userId) return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/stats/${userId}`);
+        const d = await res.json();
+        
+        document.getElementById('sTotal').innerText = d.total ?? "0";
+        document.getElementById('sTime').innerText = d.total_time ?? "0h 0m";
+        
+        // Aesthetic mapping for Core Frequency
+        const coreFreq = d.dominant || "Initial Scan";
+        document.getElementById('sMood').innerText = coreFreq;
+        
+        document.getElementById('sStreak').innerText = d.streak ?? "0";
+    } catch(e) { console.error("Stats Error:", e); }
+}
 
     function resetSessionState() { clearInterval(timerInterval); seconds = 0; }
     function toggleInsights() {
@@ -647,7 +663,13 @@ async function handleAuth() {
     }
 
     function logout() { sessionStorage.removeItem('zentune_id'); location.reload(); }
-</script>
+    </script>
+       
+    <div id="server-status-container">
+            <div id="status-dot"></div>
+            <span id="status-text">Server: Sleeping</span>
+        </div>
+
     <audio id="notificationSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 </body>
 </html>
