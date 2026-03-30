@@ -406,18 +406,14 @@
     isPaused = true;
     if (ytPlayer) ytPlayer.pauseVideo();
 
-    const ping = document.getElementById('notificationSound');
-    ping.play().catch(e => console.log("Audio block:", e));
+    document.getElementById('notificationSound').play().catch(() => {});
+    
+    saveSessionToDatabase(); // Saves the time/mood to stats
 
-    document.getElementById('playPauseBtn').innerText = "Start";
-    
-    // NEW: Save to database and then alert the user
-    saveSessionToDatabase();
-    
-    // We use a slight delay for the alert so the save request can fire off
+    // NEW: Trigger the feedback modal
     setTimeout(() => {
-        alert("Session Complete! Great job staying focused.");
-    }, 500);
+        document.getElementById('feedbackOverlay').style.display = 'flex';
+    }, 800);
 }
 
     async function saveSessionToDatabase() {
@@ -453,6 +449,41 @@ try {
     }
 } // Final closing brace for the function
 
+    async function submitFeedback() {
+    const btn = document.getElementById('feedbackSubmitBtn');
+    const rating = document.getElementById('ratingInput').value;
+    const comment = document.getElementById('feedbackText').value;
+    const moodUsed = document.getElementById('moodInput').options[document.getElementById('moodInput').selectedIndex].text;
+
+    btn.innerText = "Sending...";
+    btn.disabled = true;
+
+    try {
+        await fetch(`${API_BASE_URL}/save_feedback`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: userId || 'guest',
+                rating: rating,
+                comment: comment,
+                mood_context: moodUsed,
+                timestamp: new Date().toISOString()
+            })
+        });
+        console.log("Feedback recorded for admin.");
+    } catch (e) {
+        console.error("Feedback failed to save:", e);
+    }
+
+    // Always close and reset, even if fetch fails, to not annoy the user
+    document.getElementById('feedbackOverlay').style.display = 'none';
+    document.getElementById('feedbackText').value = ""; // Clear for next time
+    btn.innerText = "Submit & Close";
+    btn.disabled = false;
+    
+    alert("Session data and feedback synced! Great work.");
+}
+    
     async function calibrate() {
     const mood = document.getElementById('moodInput').value;
     const btn = document.getElementById('calBtn');
@@ -702,5 +733,30 @@ async function handleAuth() {
         </div>
 
     <audio id="notificationSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
+
+   <div id="server-status-container">
+        <div id="status-dot"></div>
+        <span id="status-text">SERVER: SLEEPING</span>
+    </div>
+
+    <div id="feedbackOverlay" style="position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.85); z-index:6000; display:none; justify-content:center; align-items:center; backdrop-filter:blur(8px);">
+        <div class="guide-box" style="border-color: var(--accent); max-width: 350px;">
+            <h3 style="color:var(--accent); margin-top:0;">Session Feedback</h3>
+            <p style="font-size:12px; opacity:0.8;">How was your experience?</p>
+            
+            <select id="ratingInput" style="margin-bottom:10px;">
+                <option value="5">⭐⭐⭐⭐⭐ Excellent</option>
+                <option value="4">⭐⭐⭐⭐ Great</option>
+                <option value="3">⭐⭐⭐ Good</option>
+                <option value="2">⭐⭐ Fair</option>
+                <option value="1">⭐ Poor</option>
+            </select>
+
+            <textarea id="feedbackText" placeholder="Any technical issues or thoughts?" style="width:100%; height:80px; border-radius:12px; padding:10px; background:var(--input-bg); color:var(--text); border:1px solid var(--border); font-family:inherit; font-size:12px; box-sizing:border-box; outline:none; resize:none;"></textarea>
+            
+            <button onclick="submitFeedback()" class="cal-btn" id="feedbackSubmitBtn">Submit & Close</button>
+        </div>
+    </div>
+
 </body>
 </html>
