@@ -37,7 +37,8 @@ def init_db():
     if conn is None: return
     try:
         cur = conn.cursor()
-        # Your existing users table is fine
+        
+        # 1. Users Table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 user_id TEXT PRIMARY KEY,
@@ -49,22 +50,31 @@ def init_db():
                 last_session_date DATE
             )
         ''')
-        # Updated history table to ensure columns match our logic
+        
+        # 2. History Table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS history (
                 id SERIAL PRIMARY KEY,
                 user_id TEXT,
                 mood TEXT,
+                frequency TEXT,
                 duration INTEGER,
                 timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        
-        # SELF-HEALING: Check if 'mood' exists in history (if you created it long ago)
-        cur.execute("SELECT column_name FROM information_schema.columns WHERE table_name='history' AND column_name='mood';")
-        if not cur.fetchone():
-            cur.execute("ALTER TABLE history ADD COLUMN mood TEXT;")
-            print("Added missing 'mood' column.")
+
+        # 3. SELF-HEALING: Check for both 'mood' and 'frequency'
+        # This handles cases where the table was created in an older version of your app
+        columns_to_ensure = ['mood', 'frequency']
+        for col in columns_to_ensure:
+            cur.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'history' AND column_name = %s
+            """, (col,))
+            if not cur.fetchone():
+                cur.execute(f"ALTER TABLE history ADD COLUMN {col} TEXT;")
+                print(f"Added missing column: {col}")
 
         conn.commit()
         cur.close()
@@ -213,7 +223,7 @@ def get_stats(user_id):
         # 2. Get the Most Frequent Mood (Dominant Mood)
         cur.execute("""
             SELECT mood FROM history 
-            WHERE user_id = %s 
+            WHERE user_id = %s AND mood IS NOT NULL AND mood != ''
             GROUP BY mood 
             ORDER BY COUNT(*) DESC 
             LIMIT 1
@@ -257,7 +267,8 @@ def get_stats(user_id):
         return jsonify({
             "total": total_sessions,
             "total_time": f"{hours}h {minutes}m",
-            "dominant": dominant,
+            "dominant": dominant_label,    # Shown in Dominant Mood field
+            "frequency": dominant_label,   # Also shown in Core Frequency field
             "streak": f"{streak} Days"
         }), 200
 
