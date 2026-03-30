@@ -205,73 +205,54 @@ def get_stats(user_id):
     if not conn: 
         return jsonify({"status": "error", "message": "Database connection failed"}), 500
     
+    cur = conn.cursor()
     try:
-        cur = conn.cursor()
-        
-        # 0. Initialize default values to prevent "NameError"
+        # Default values to prevent NameError
         total_sessions = 0
         total_seconds = 0
         dominant_label = "Initial Scan"
-        streak = 0
+        streak_count = 0
 
-        # 1. Get Count and Total Duration
-        cur.execute("""
-            SELECT COUNT(*), COALESCE(SUM(duration), 0) 
-            FROM history 
-            WHERE user_id = %s
-        """, (user_id,))
+        # 1. Basic Stats
+        cur.execute("SELECT COUNT(*), COALESCE(SUM(duration), 0) FROM history WHERE user_id = %s", (user_id,))
         row = cur.fetchone()
         if row:
-            total_sessions = row[0]
-            total_seconds = row[1]
-        
-        # 2. Get the Most Frequent Mood (Dominant Mood)
+            total_sessions, total_seconds = row
+
+        # 2. Most Frequent Mood (Dominant Mood & Core Frequency)
         cur.execute("""
             SELECT mood FROM history 
             WHERE user_id = %s AND mood IS NOT NULL AND mood != ''
-            GROUP BY mood 
-            ORDER BY COUNT(*) DESC 
-            LIMIT 1
+            GROUP BY mood ORDER BY COUNT(*) DESC LIMIT 1
         """, (user_id,))
         mood_row = cur.fetchone()
         if mood_row:
-            dominant_label = mood_row[0] # This will be "Deep Flow Mode", etc.
-        
+            dominant_label = mood_row[0]
+
         # 3. Format Time
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
 
-        # 4. Calculate Streak
-        cur.execute("""
-            SELECT DISTINCT date(timestamp) 
-            FROM history 
-            WHERE user_id = %s 
-            ORDER BY date(timestamp) DESC
-        """, (user_id,))
-        
+        # 4. Streak Calculation
+        cur.execute("SELECT DISTINCT date(timestamp) FROM history WHERE user_id = %s ORDER BY date(timestamp) DESC", (user_id,))
         dates = [r[0] for r in cur.fetchall()]
         if dates:
             from datetime import date, timedelta
-            today = date.today()
-            yesterday = today - timedelta(days=1)
-            
+            today, yesterday = date.today(), date.today() - timedelta(days=1)
             if dates[0] == today or dates[0] == yesterday:
-                streak = 1
+                streak_count = 1
                 for i in range(len(dates) - 1):
                     if dates[i] - timedelta(days=1) == dates[i+1]:
-                        streak += 1
-                    else:
-                        break
+                        streak_count += 1
+                    else: break
 
-        # 5. Return the JSON
         return jsonify({
             "total": total_sessions,
             "total_time": f"{hours}h {minutes}m",
-            "dominant": dominant_label,    # Shown in Dominant Mood field
-            "frequency": dominant_label,   # Shown in Core Frequency field
-            "streak": f"{streak} Days"
+            "dominant": dominant_label,
+            "frequency": dominant_label, # This fills your 'Core Frequency' field
+            "streak": f"{streak_count} Days"
         }), 200
-
     except Exception as e:
         print(f"Stats Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
