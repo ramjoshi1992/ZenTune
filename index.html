@@ -258,16 +258,26 @@
     let isPaused = false, userId = sessionStorage.getItem('zentune_id'); 
 
     window.onload = () => { 
-    // Wake up the server silently
-    fetch(`${API_BASE_URL}/reset-password`, { method: 'HEAD' }).catch(() => {});
+    // 1. BUFFED WAKE-UP CALL
+    // We add a timestamp (?t=...) so the browser treats it as a brand new request every time.
+    fetch(`${API_BASE_URL}/reset-password?t=${Date.now()}`, { 
+        method: 'GET', // GET is often more 'awake-inducing' for free-tier sleepers than HEAD
+        mode: 'cors' 
+    })
+    .then(() => console.log("Server wake-up ping sent successfully."))
+    .catch(() => console.log("Server is still hibernating..."));
 
+    // 2. EXISTING SESSION LOGIC
     const savedId = sessionStorage.getItem('zentune_id');
     if (savedId) {
         userId = savedId;
         showUser(userId); 
+        // Tip: Trigger fetchStats() here so the UI updates as soon as the server wakes!
+        if (typeof fetchStats === "function") fetchStats();
     } else {
         openGuide();
     }
+    
     updateAura(); 
 };
 
