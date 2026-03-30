@@ -300,26 +300,28 @@
     const dot = document.getElementById('status-dot');
     const text = document.getElementById('status-text');
 
-    // 1. BUFFED WAKE-UP CALL with Status Update
-    fetch(`${API_BASE_URL}/reset-password?t=${Date.now()}`, { 
-        method: 'GET',
-        mode: 'cors' 
-    })
-    .then(response => {
-        if(response.ok) {
-            // Success: Change to Green/Blue and update text
-            dot.style.background = "#4bffb0";
-            dot.style.boxShadow = "0 0 8px #4bffb0";
-            text.innerText = " ";
-            
-            // Now that we know it's awake, fetch the latest stats!
-            if (userId && typeof fetchStats === "function") fetchStats();
-        }
-    })
-    .catch(() => {
-        text.innerText = "Server: Waking up...";
-        dot.style.animation = "pulse 1.5s infinite"; // Optional pulsing effect
-    });
+    // 1. CLEAN HEALTH CHECK (Replaces reset-password wake-up)
+fetch(`${API_BASE_URL}/health?t=${Date.now()}`, { 
+    method: 'GET',
+    mode: 'cors' 
+})
+.then(response => {
+    if(response.ok) {
+        // Success: Server is responsive
+        dot.style.background = "#4bffb0";
+        dot.style.boxShadow = "0 0 8px #4bffb0";
+        dot.style.animation = "none"; // Stop pulsing if it was waking up
+        text.innerText = " "; 
+        
+        // Fetch latest stats now that connection is confirmed
+        if (userId && typeof fetchStats === "function") fetchStats();
+    }
+})
+.catch(() => {
+    // If the server is still spinning up or offline
+    text.innerText = "Server: Waking up...";
+    dot.style.animation = "pulse 1.5s infinite";
+});
 
     // 2. EXISTING SESSION LOGIC
     const savedId = sessionStorage.getItem('zentune_id');
@@ -708,20 +710,16 @@ async function handleAuth() {
     // --- KEEP-ALIVE HEARTBEAT ---
     // Pings the server every 5 minutes to prevent it from spinning down (sleeping)
     function startHeartbeat() {
-        setInterval(async () => {
-            try {
-                const res = await fetch(`${API_BASE_URL}/reset-password?hb=${Date.now()}`, { mode: 'cors' });
-                if (res.ok) {
-                    console.log("Heartbeat: Server kept awake.");
-                    // Optional: keep the dot green
-                    document.getElementById('status-dot').style.background = "#4bffb0";
-                    document.getElementById('status-text').innerText = "Server: Online";
-                }
-            } catch (e) {
-                console.warn("Heartbeat failed.");
-            }
-        }, 300000); // 5 minutes
-    }
+    setInterval(async () => {
+        try {
+            // Updated URL to /health
+            const res = await fetch(`${API_BASE_URL}/health`);
+            if (res.ok) console.log("Heartbeat: Pulse stable.");
+        } catch (e) {
+            console.warn("Heartbeat: Server unreachable.");
+        }
+    }, 300000); // 5 minutes
+}
 
     // Start the heartbeat immediately
     startHeartbeat();
