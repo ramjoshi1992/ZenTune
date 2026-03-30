@@ -721,6 +721,11 @@ async function handleAuth() {
     }, 300000); // 5 minutes
 }
 
+    <div id="server-status-container" style="display: none;">
+    <div id="status-dot"></div>
+    <span id="status-text"></span>
+</div>
+
     // Start the heartbeat immediately
     startHeartbeat();
 </script>
