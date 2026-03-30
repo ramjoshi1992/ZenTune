@@ -75,47 +75,11 @@
             cursor: pointer; box-sizing: border-box;
         }
 
-        @keyframes pulse {
-            0% { opacity: 1; transform: scale(1); }
-            50% { opacity: 0.4; transform: scale(1.2); }
-            100% { opacity: 1; transform: scale(1); }
-        }
-        
         .cal-btn { width: 100%; height: 44px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; margin-top: 10px; }
         .control-btns { display: none; gap: 8px; margin-top: 12px; }
         .icon-btn { flex: 1; background: #4a4a8a; border: none; border-radius: var(--radius-md); color: white; padding: 10px; cursor: pointer; font-size: 14px; }
         .stop-btn { background: #ff4d4d; }
 
-        /* Add this around line 87 */
-        #server-status-container {
-            position: fixed;
-            bottom: 20px;
-            left: 20px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            z-index: 2000;
-            pointer-events: none; /* Keeps it from blocking clicks */
-        }
-
-        #status-dot {
-            width: 8px;
-            height: 8px;
-            background: #ff4b4b;
-            border-radius: 50%;
-            box-shadow: 0 0 8px rgba(255, 75, 75, 0.6);
-            transition: all 0.4s ease;
-        }
-
-        #status-text {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            color: var(--text);
-            opacity: 0.6;
-        }
-        
         .video-box { width: 100%; margin: 15px auto 0; aspect-ratio: 16/9; border-radius: var(--radius-md); overflow: hidden; display: none; background: #000; }
         
         .settings-column { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; padding-top: 0; }
@@ -232,12 +196,9 @@
         <div class="stat-card"><div class="stat-val" id="sTotal">0</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Sessions</div></div>
         <div class="stat-card"><div class="stat-val" id="sTime">0h 0m</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Total Focus Time</div></div>
         <div class="stat-card"><div class="stat-val" id="sMood">Initial Scan</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Core Frequency</div></div>
-        <div class="stat-card"><div class="stat-val" id="sStreak">0</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Streak</div></div>
+        <div class="stat-card"><div class="stat-val" id="sStreak">0 Days</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Streak</div></div>
     </aside>
 
-    
-
-       
     <main class="main-content">
         <div class="card" id="mainCard">
             <h1 style="margin: 0 0 5px 0; font-size: 22px;">ZenTune</h1>
@@ -297,31 +258,9 @@
     let isPaused = false, userId = sessionStorage.getItem('zentune_id'); 
 
     window.onload = () => { 
-    const dot = document.getElementById('status-dot');
-    const text = document.getElementById('status-text');
+    // Wake up the server silently
+    fetch(`${API_BASE_URL}/reset-password`, { method: 'HEAD' }).catch(() => {});
 
-    // 1. BUFFED WAKE-UP CALL with Status Update
-    fetch(`${API_BASE_URL}/reset-password?t=${Date.now()}`, { 
-        method: 'GET',
-        mode: 'cors' 
-    })
-    .then(response => {
-        if(response.ok) {
-            // Success: Change to Green/Blue and update text
-            dot.style.background = "#4bffb0";
-            dot.style.boxShadow = "0 0 8px #4bffb0";
-            text.innerText = "Server: Online";
-            
-            // Now that we know it's awake, fetch the latest stats!
-            if (userId && typeof fetchStats === "function") fetchStats();
-        }
-    })
-    .catch(() => {
-        text.innerText = "Server: Waking up...";
-        dot.style.animation = "pulse 1.5s infinite"; // Optional pulsing effect
-    });
-
-    // 2. EXISTING SESSION LOGIC
     const savedId = sessionStorage.getItem('zentune_id');
     if (savedId) {
         userId = savedId;
@@ -461,8 +400,7 @@ try {
         try {
             const res = await fetch(`${API_BASE_URL}/identify`, {
                 method:'POST', headers:{'Content-Type':'application/json'}, 
-                // Change this line inside calibrate()
-                body: JSON.stringify({ mood: mood, user_id: userId || "guest" })
+                body:JSON.stringify({mood:mood, user_id: userId || "guest"})
             });
             const data = await res.json();
             if(data.status==='success' && data.tracks.length > 0) { 
@@ -609,35 +547,32 @@ async function handleAuth() {
 
     function showUser(id) { 
     userId = id;
-    sessionStorage.setItem('zentune_id', userId);
     
-    // Hide the auth stack
+    // Hide the new auth stack instead of the old loginForm
     const authBox = document.getElementById('authContainer');
-    if (authBox) authBox.style.display = 'none';
+    if (authBox) {
+        authBox.style.display = 'none';
+    }
     
-    // Show the greeting in the top nav
     document.getElementById('userGreeting').style.display = 'block'; 
     document.getElementById('userLabel').innerText = `Welcome, ${id}`; 
     
+    // Fetch the stats for the sidebar
     fetchStats(); 
 }
 
     async function fetchStats() {
-    if(!userId) return;
-    try {
-        const res = await fetch(`${API_BASE_URL}/stats/${userId}`);
-        const d = await res.json();
-        
-        document.getElementById('sTotal').innerText = d.total ?? "0";
-        document.getElementById('sTime').innerText = d.total_time ?? "0h 0m";
-        
-        // Aesthetic mapping for Core Frequency
-        const coreFreq = d.dominant || "Initial Scan";
-        document.getElementById('sMood').innerText = coreFreq;
-        
-        document.getElementById('sStreak').innerText = d.streak ?? "0";
-    } catch(e) { console.error("Stats Error:", e); }
-}
+        if(!userId) return;
+        try {
+            const res = await fetch(`${API_BASE_URL}/stats/${userId}`);
+            const d = await res.json();
+            document.getElementById('sTotal').innerText = d.total ?? "0";
+            document.getElementById('sTime').innerText = d.total_time ?? "0h 0m";
+            document.getElementById('sMood').innerText = d.dominant ?? "None";
+            document.getElementById('sFreq').innerText = d.frequency ?? "N/A";
+            document.getElementById('sStreak').innerText = d.streak ?? "0 Days";
+        } catch(e) { console.error("Stats Error:", e); }
+    }
 
     function resetSessionState() { clearInterval(timerInterval); seconds = 0; }
     function toggleInsights() {
@@ -663,13 +598,7 @@ async function handleAuth() {
     }
 
     function logout() { sessionStorage.removeItem('zentune_id'); location.reload(); }
-    </script>
-       
-    <div id="server-status-container">
-            <div id="status-dot"></div>
-            <span id="status-text">Server: Sleeping</span>
-        </div>
-
+</script>
     <audio id="notificationSound" src="https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3"></audio>
 </body>
 </html>
