@@ -118,40 +118,47 @@
     <div class="help-fab" onclick="openGuide()">i</div>
 
     <nav class="top-nav">
-        <div class="nav-group">
-            <div id="authContainer" class="auth-stack">
-                <button id="mainAuthBtn" onclick="stepOne()" class="login-btn">SIGN IN</button>
-                <div id="step1" class="auth-level">
-                    <div class="connector-line"></div>
-                    <div style="display:flex; gap:5px; width:100%;">
-                        <button class="login-btn mini-btn" onclick="stepTwo('new')">NEW</button>
-                        <button class="login-btn mini-btn" onclick="stepTwo('returning')">EXISTING</button>
-                    </div>
+    <div class="nav-group">
+        <div id="authContainer" class="auth-stack">
+            <button id="mainAuthBtn" onclick="stepOne()" class="login-btn">SIGN IN</button>
+            <div id="step1" class="auth-level">
+                <div class="connector-line"></div>
+                <div style="display:flex; gap:5px; width:100%;">
+                    <button class="login-btn mini-btn" onclick="stepTwo('new')">NEW</button>
+                    <button class="login-btn mini-btn" onclick="stepTwo('returning')">EXISTING</button>
                 </div>
-                <div id="step2" class="auth-level">
-                    <div class="connector-line"></div>
+            </div>
+            <div id="step2" class="auth-level">
+                <div class="connector-line"></div>
+                <div id="authInputs">
                     <input type="text" id="uidInput" placeholder="User ID">
                     <input type="password" id="pwdInput" placeholder="Password">
                     <button id="finalAuthBtn" onclick="handleAuth()" class="login-btn">GO</button>
-                    <span onclick="goBack()" style="font-size:9px; cursor:pointer; opacity:0.5; margin-top:5px;">← BACK</span>
-                </div>
-            </div>
-            <div id="userGreeting" style="display:none; text-align: right;">
-                <span id="userLabel" style="font-size: 13px; font-weight:bold; display:block;"></span>
-                <div style="display:flex; gap:10px; margin-top:5px; justify-content: flex-end;">
-                     <button onclick="toggleInsights()" id="insightToggleBtn" style="width:auto; padding: 5px 10px; font-size: 9px;">SHOW INSIGHTS</button>
-                     <span onclick="logout()" style="color:#ff4d4d; cursor:pointer; font-size:10px; text-decoration:underline;">LOGOUT</span>
+                    <span onclick="goBack()" style="font-size:9px; cursor:pointer; opacity:0.5; margin-top:5px; align-self:center;">← BACK</span>
                 </div>
             </div>
         </div>
 
-        <div class="settings-column">
-            <div class="theme-container">
-                Dark Mode
-                <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
+        <div id="userGreeting" style="display:none; text-align: center; width: 100%;">
+            <div style="padding: 15px 20px; border: 1px solid var(--border); border-radius: 20px; margin-bottom: 20px; box-sizing: border-box; display: inline-block;">
+                <span id="userLabel" style="font-size: 13px; font-weight:bold; color: var(--text); text-transform: none; display:block;">Welcome, new</span>
+            </div>
+
+            <div style="display:flex; gap:5px; width:140px; margin: 0 auto; box-sizing: border-box; text-align: center;">
+                <button onclick="toggleInsights()" id="insightToggleBtn" class="login-btn mini-btn" style="flex: 1; padding: 6px 5px; font-size: 8px;">SHOW INSIGHTS</button>
+                
+                <button onclick="logout()" class="login-btn mini-btn" style="flex: 1; padding: 6px 5px; font-size: 8px; background: rgba(255, 77, 77, 0.15); border: 1px solid rgba(255, 77, 77, 0.3); color: #ff4d4d; opacity: 1;">LOGOUT</button>
             </div>
         </div>
-    </nav>
+    </div>
+
+    <div class="settings-column">
+        <div class="theme-container">
+            Dark Mode
+            <label class="switch"><input type="checkbox" id="themeTog" checked onclick="toggleTheme()"><span class="slider"></span></label>
+        </div>
+    </div>
+</nav>
 
     <aside class="stats-panel">
         <h3 style="margin-top:0; font-size:16px;">Insights</h3>
