@@ -38,7 +38,7 @@ def init_db():
     try:
         cur = conn.cursor()
 
-        cur.execute("DELETE FROM history;")
+        # cur.execute("DELETE FROM history;")
         
         # 1. Users Table
         cur.execute('''
