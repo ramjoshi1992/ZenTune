@@ -79,7 +79,7 @@ def init_db():
 
         # 4. SELF-HEALING: Check for both 'mood' and 'frequency'
         # This handles cases where the table was created in an older version of your app
-        columns_to_ensure = ['mood', 'frequency']
+        columns_to_ensure = ['mood', 'frequency', 'before_state', 'after_state']
         for col in columns_to_ensure:
             cur.execute("""
                 SELECT column_name 
