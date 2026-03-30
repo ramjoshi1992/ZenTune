@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 from werkzeug.security import generate_password_hash, check_password_hash
 from datetime import datetime
+from datetime import date, timedelta
 
 # --- SSL & Environment Setup ---
 os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
@@ -296,7 +297,8 @@ def save_session():
         cur.close()
         conn.close()
 
+
+init_db()
 if __name__ == '__main__':
-    init_db()
     port = int(os.environ.get("PORT", 10000))
     app.run(host='0.0.0.0', port=port)
