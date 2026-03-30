@@ -208,17 +208,22 @@ def get_stats(user_id):
     try:
         cur = conn.cursor()
         
+        # 0. Initialize default values to prevent "NameError"
+        total_sessions = 0
+        total_seconds = 0
+        dominant_label = "Initial Scan"
+        streak = 0
+
         # 1. Get Count and Total Duration
-        # Using COALESCE ensures we get 0 instead of None if no history exists
         cur.execute("""
             SELECT COUNT(*), COALESCE(SUM(duration), 0) 
             FROM history 
             WHERE user_id = %s
         """, (user_id,))
         row = cur.fetchone()
-        
-        total_sessions = row[0] if row else 0
-        total_seconds = row[1] if row else 0
+        if row:
+            total_sessions = row[0]
+            total_seconds = row[1]
         
         # 2. Get the Most Frequent Mood (Dominant Mood)
         cur.execute("""
@@ -229,13 +234,14 @@ def get_stats(user_id):
             LIMIT 1
         """, (user_id,))
         mood_row = cur.fetchone()
-        dominant = mood_row[0].capitalize() if mood_row and mood_row[0] else "Initial Scan"
+        if mood_row:
+            dominant_label = mood_row[0] # This will be "Deep Flow Mode", etc.
         
-        # 3. Format Time (Convert seconds to h/m)
+        # 3. Format Time
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
 
-        # 4. Calculate Streak (New Logic)
+        # 4. Calculate Streak
         cur.execute("""
             SELECT DISTINCT date(timestamp) 
             FROM history 
@@ -244,31 +250,25 @@ def get_stats(user_id):
         """, (user_id,))
         
         dates = [r[0] for r in cur.fetchall()]
-        streak = 0
         if dates:
             from datetime import date, timedelta
             today = date.today()
             yesterday = today - timedelta(days=1)
             
-            # Start checking from today or yesterday
-            # (If they haven't practiced today, the streak might still be alive from yesterday)
-            current_check = dates[0]
-            if current_check == today or current_check == yesterday:
+            if dates[0] == today or dates[0] == yesterday:
                 streak = 1
                 for i in range(len(dates) - 1):
-                    # Check if the next date in the list is exactly one day prior
                     if dates[i] - timedelta(days=1) == dates[i+1]:
                         streak += 1
                     else:
                         break
-            else:
-                streak = 0 # Streak broken (last session was before yesterday)
 
+        # 5. Return the JSON
         return jsonify({
             "total": total_sessions,
             "total_time": f"{hours}h {minutes}m",
             "dominant": dominant_label,    # Shown in Dominant Mood field
-            "frequency": dominant_label,   # Also shown in Core Frequency field
+            "frequency": dominant_label,   # Shown in Core Frequency field
             "streak": f"{streak} Days"
         }), 200
 
