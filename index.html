@@ -454,32 +454,39 @@ try {
 } // Final closing brace for the function
 
     async function calibrate() {
-        const mood = document.getElementById('moodInput').value;
-        const btn = document.getElementById('calBtn');
-        btn.innerText = "Analyzing..."; btn.disabled = true;
+    const mood = document.getElementById('moodInput').value;
+    const btn = document.getElementById('calBtn');
+    const dot = document.getElementById('status-dot'); // Added this
+    const text = document.getElementById('status-text'); // Added this
+    
+    btn.innerText = "Analyzing..."; btn.disabled = true;
 
-        try {
-            const res = await fetch(`${API_BASE_URL}/identify`, {
-                method:'POST', headers:{'Content-Type':'application/json'}, 
-                // Change this line inside calibrate()
-                body: JSON.stringify({ mood: mood, user_id: userId || "guest" })
-            });
-            const data = await res.json();
-            if(data.status==='success' && data.tracks.length > 0) { 
-                trackPool=data.tracks; poolIdx=0; 
-                playTrack(0);
-                document.getElementById('result').style.display='block';
-                document.getElementById('sessionControls').style.display='flex';
-                document.getElementById('volContainer').style.display='flex';
-                resetSessionState(); 
-            }
-        } catch(e) { 
-            btn.innerText = "Waking server...";
-            setTimeout(() => calibrate(), 3000); 
-            return;
+    try {
+        const res = await fetch(`${API_BASE_URL}/identify`, {
+            method:'POST', headers:{'Content-Type':'application/json'}, 
+            body: JSON.stringify({ mood: mood, user_id: userId || "guest" })
+        });
+        const data = await res.json();
+        
+        if(data.status==='success') { 
+            // --- MANUALLY UPDATE STATUS HERE ---
+            dot.style.background = "#4bffb0";
+            dot.style.boxShadow = "0 0 8px #4bffb0";
+            dot.style.animation = "none";
+            text.innerText = "Server: Online";
+            // ------------------------------------
+
+            trackPool=data.tracks; playTrack(0);
+            document.getElementById('result').style.display='block';
+            document.getElementById('sessionControls').style.display='flex';
+            document.getElementById('volContainer').style.display='flex';
+            seconds = 0;
         }
-        btn.innerText = "Calibrate"; btn.disabled = false;
+    } catch(e) { 
+        btn.innerText = "Retry..."; 
     }
+    btn.innerText = "Calibrate"; btn.disabled = false;
+}
 
     function playTrack(idx) {
         poolIdx = idx;
