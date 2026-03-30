@@ -80,6 +80,18 @@
         input:checked + .slider { background: var(--accent); }
         input:checked + .slider:before { transform: translateX(20px); }
 
+                /* Removes arrows from the number input (Chrome, Safari, Edge, Opera) */
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        
+        /* Removes arrows from the number input (Firefox) */
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+        
         .help-fab { position: fixed; bottom: 25px; right: 25px; width: 45px; height: 45px; background: var(--accent); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 2000; }
         #guideOverlay { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(0,0,0,0.8); z-index: 5000; display: none; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
         .guide-box { background: var(--card); padding: 30px; border-radius: 24px; max-width: 400px; width: 90%; text-align: center; border: 1px solid var(--accent); color: var(--text); }
@@ -179,7 +191,7 @@
 
             <div class="goal-adjuster" style="display:flex; gap:5px;">
                 <button class="adj-btn" onclick="adjustGoal(-1)">-</button>
-                <input type="number" id="timeGoal" value="25" min="1">
+                <input type="number" id="timeGoal" value="25" min="1" readonly>
                 <button class="adj-btn" onclick="adjustGoal(1)">+</button>
             </div>
 
