@@ -37,6 +37,8 @@ def init_db():
     if conn is None: return
     try:
         cur = conn.cursor()
+
+        cur.execute("DELETE FROM history;")
         
         # 1. Users Table
         cur.execute('''
