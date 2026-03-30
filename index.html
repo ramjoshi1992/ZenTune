@@ -75,6 +75,12 @@
             cursor: pointer; box-sizing: border-box;
         }
 
+        @keyframes pulse {
+            0% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.4; transform: scale(1.2); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+        
         .cal-btn { width: 100%; height: 44px; background: var(--accent); color: white; border: none; border-radius: var(--radius-md); font-weight: 700; cursor: pointer; margin-top: 10px; }
         .control-btns { display: none; gap: 8px; margin-top: 12px; }
         .icon-btn { flex: 1; background: #4a4a8a; border: none; border-radius: var(--radius-md); color: white; padding: 10px; cursor: pointer; font-size: 14px; }
@@ -199,6 +205,20 @@
         <div class="stat-card"><div class="stat-val" id="sStreak">0</div><div style="font-size:9px; opacity:0.6; text-transform:uppercase;">Streak</div></div>
     </aside>
 
+    <div id="profile-section">
+    <h2 id="welcome-text">Welcome, new</h2>
+    
+    <div id="server-status-container" style="display: flex; align-items: center; gap: 8px; margin: 10px 0; font-size: 0.8rem; opacity: 0.8;">
+        <div id="status-dot" style="width: 8px; height: 8px; background: #ff4b4b; border-radius: 50%; box-shadow: 0 0 5px #ff4b4b; transition: 0.3s;"></div>
+        <span id="status-text" style="color: white; font-family: sans-serif;">Server: Sleeping</span>
+    </div>
+
+    <div class="profile-actions">
+        <button onclick="toggleInsights()" class="btn-secondary">HIDE INSIGHTS</button>
+        <button onclick="logout()" class="btn-logout">LOGOUT</button>
+    </div>
+</div>
+    
     <main class="main-content">
         <div class="card" id="mainCard">
             <h1 style="margin: 0 0 5px 0; font-size: 22px;">ZenTune</h1>
@@ -258,26 +278,38 @@
     let isPaused = false, userId = sessionStorage.getItem('zentune_id'); 
 
     window.onload = () => { 
-    // 1. BUFFED WAKE-UP CALL
-    // We add a timestamp (?t=...) so the browser treats it as a brand new request every time.
+    const dot = document.getElementById('status-dot');
+    const text = document.getElementById('status-text');
+
+    // 1. BUFFED WAKE-UP CALL with Status Update
     fetch(`${API_BASE_URL}/reset-password?t=${Date.now()}`, { 
-        method: 'GET', // GET is often more 'awake-inducing' for free-tier sleepers than HEAD
+        method: 'GET',
         mode: 'cors' 
     })
-    .then(() => console.log("Server wake-up ping sent successfully."))
-    .catch(() => console.log("Server is still hibernating..."));
+    .then(response => {
+        if(response.ok) {
+            // Success: Change to Green/Blue and update text
+            dot.style.background = "#4bffb0";
+            dot.style.boxShadow = "0 0 8px #4bffb0";
+            text.innerText = "Server: Online";
+            
+            // Now that we know it's awake, fetch the latest stats!
+            if (userId && typeof fetchStats === "function") fetchStats();
+        }
+    })
+    .catch(() => {
+        text.innerText = "Server: Waking up...";
+        dot.style.animation = "pulse 1.5s infinite"; // Optional pulsing effect
+    });
 
     // 2. EXISTING SESSION LOGIC
     const savedId = sessionStorage.getItem('zentune_id');
     if (savedId) {
         userId = savedId;
         showUser(userId); 
-        // Tip: Trigger fetchStats() here so the UI updates as soon as the server wakes!
-        if (typeof fetchStats === "function") fetchStats();
     } else {
         openGuide();
     }
-    
     updateAura(); 
 };
 
@@ -410,7 +442,8 @@ try {
         try {
             const res = await fetch(`${API_BASE_URL}/identify`, {
                 method:'POST', headers:{'Content-Type':'application/json'}, 
-                body:JSON.stringify({mood:mood, user_id: userId || "guest"})
+                // Change this line inside calibrate()
+                body: JSON.stringify({ mood: mood, user_id: userId || "guest" })
             });
             const data = await res.json();
             if(data.status==='success' && data.tracks.length > 0) { 
@@ -557,17 +590,20 @@ async function handleAuth() {
 
     function showUser(id) { 
     userId = id;
-    
-    // Hide the new auth stack instead of the old loginForm
+    sessionStorage.setItem('zentune_id', id);
+
+    // Hide all login UI
     const authBox = document.getElementById('authContainer');
-    if (authBox) {
-        authBox.style.display = 'none';
-    }
-    
+    if (authBox) authBox.style.display = 'none';
+
+    // Show Greeting and Stats
     document.getElementById('userGreeting').style.display = 'block'; 
     document.getElementById('userLabel').innerText = `Welcome, ${id}`; 
     
-    // Fetch the stats for the sidebar
+    // Update the "Welcome, new" text in the middle if you keep that section
+    const welcomeText = document.getElementById('welcome-text');
+    if(welcomeText) welcomeText.innerText = `Welcome, ${id}`;
+
     fetchStats(); 
 }
 
