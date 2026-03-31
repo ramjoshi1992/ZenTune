@@ -79,24 +79,28 @@ def init_db():
 
         # 4. SELF-HEALING: Check for both 'mood' and 'frequency'
         # This handles cases where the table was created in an older version of your app
-        columns_to_ensure = ['mood', 'frequency', 'before_state', 'after_state']
-        for col in columns_to_ensure:
+        # 1. Ensure HISTORY table is ready for session tracking
+        history_cols = ['mood', 'frequency']
+        for col in history_cols:
             cur.execute("""
-                SELECT column_name 
-                FROM information_schema.columns 
+                SELECT column_name FROM information_schema.columns 
                 WHERE table_name = 'history' AND column_name = %s
             """, (col,))
             if not cur.fetchone():
                 cur.execute(f"ALTER TABLE history ADD COLUMN {col} TEXT;")
-                print(f"Added missing column: {col}")
+                print(f"Added to history: {col}")
 
-        conn.commit()
-        cur.close()
-        print("Database initialized successfully.")
-    except Exception as e:
-        print(f"Error during init_db: {e}")
-    finally:
-        conn.close()
+        # 2. Ensure FEEDBACK table is ready for the new Arc Dial & Tokens
+        # 'after_label' matches the 'after_label' key in your index.html JS
+        feedback_cols = ['before_state', 'after_label', 'mood_context']
+        for col in feedback_cols:
+            cur.execute("""
+                SELECT column_name FROM information_schema.columns 
+                WHERE table_name = 'feedback' AND column_name = %s
+            """, (col,))
+            if not cur.fetchone():
+                cur.execute(f"ALTER TABLE feedback ADD COLUMN {col} TEXT;")
+                print(f"Added to feedback: {col}")
 
 # --- HELPER ---
 def get_search_query(mood):
