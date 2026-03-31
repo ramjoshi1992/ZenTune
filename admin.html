@@ -28,22 +28,24 @@
 
     <h3>Recent Reflections</h3>
     <table>
-        <thead>
-            <tr>
-                <th>User</th>
-                <th>State</th>
-                <th>Mood Context</th>
-                <th>Reflection</th>
-                <th>Date</th>
-            </tr>
-        </thead>
-        <tbody id="feedbackTable"></tbody>
-    </table>
+    <thead>
+        <tr>
+            <th>User</th>
+            <th>Initial State (Tokens)</th>
+            <th>Mood Context</th>
+            <th>Resulting Zen State</th>
+            <th>Intensity (0-100)</th>
+            <th>Date</th>
+        </tr>
+    </thead>
+    <tbody id="feedbackTable"></tbody>
+</table>
 
-    <script>
-        const API_BASE = 'https://zentune.onrender.com';
+   <script>
+    const API_BASE = 'https://zentune.onrender.com';
 
-        async function loadData() {
+    async function loadData() {
+        try {
             const res = await fetch(`${API_BASE}/admin/summary`);
             const data = await res.json();
             
@@ -51,21 +53,29 @@
             document.getElementById('totalHours').innerText = data.global_hours;
 
             const table = document.getElementById('feedbackTable');
-            const symbols = { 5: "🪷", 4: "🌿", 3: "🪵", 2: "💧", 1: "☁️" };
             
-            table.innerHTML = data.reflections.map(r => `
+            // Map the new data structure to the table
+            table.innerHTML = data.reflections.map(r => {
+                // Determine color based on intensity (rating)
+                const intensityColor = r.score > 70 ? '#9d96ff' : (r.score < 30 ? '#ff4d4d' : '#efefff');
+                
+                return `
                 <tr>
                     <td><b>${r.user}</b></td>
-                    <td>${symbols[r.rating] || '⭐'}</td>
+                    <td><span style="font-size:11px; opacity:0.8;">${r.before || '<i>No tokens</i>'}</span></td>
                     <td style="opacity:0.6">${r.mood}</td>
-                    <td>${r.comment || '<i>No thoughts shared</i>'}</td>
-                    <td style="font-size:11px">${r.time}</td>
+                    <td><span class="zen-label">${r.label || 'N/A'}</span></td>
+                    <td style="color:${intensityColor}; font-weight:bold;">${r.score}%</td>
+                    <td style="font-size:11px; opacity:0.5;">${r.time}</td>
                 </tr>
-            `).join('');
+            `}).join('');
+        } catch (e) {
+            console.error("Load error:", e);
         }
+    }
 
-        loadData();
-        setInterval(loadData, 30000); // Refresh every 30s
-    </script>
+    loadData();
+    setInterval(loadData, 30000); 
+</script>
 </body>
 </html>
