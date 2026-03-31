@@ -288,7 +288,7 @@
 
             <div class="goal-adjuster" style="display:flex; gap:5px;">
                 <button class="adj-btn" onclick="adjustGoal(-1)">-</button>
-                <input type="number" id="timeGoal" value="25" min="1" readonly>
+                <input type="number" id="timeGoal" value="25" min="1" max="180">
                 <button class="adj-btn" onclick="adjustGoal(1)">+</button>
             </div>
 
@@ -326,11 +326,36 @@
     let currentArcLabel = 'Grounded'; // current arc state label
 
     // ── Init ──
-    window.onload = () => {
+   window.onload = () => {
         if (userId) { showUser(userId); } else { openGuide(); }
         updateAura();
         buildTokenGrid();
         updateArc(50);
+
+        // --- NEW: Handle Manual Typing in the Time Goal ---
+        const timeInput = document.getElementById('timeGoal');
+        if (timeInput) {
+            timeInput.addEventListener('input', function() {
+                let val = parseInt(this.value);
+                
+                // If they clear the input, don't force '1' immediately 
+                // so they can finish typing (e.g., typing '25')
+                if (isNaN(val)) return; 
+
+                // Constraints: 1 to 180 minutes
+                if (val < 1) val = 1;
+                if (val > 180) val = 180;
+                
+                this.value = val;
+
+                // Sync the main timer display if a session isn't running
+                const timerDisp = document.getElementById('timerDisplay');
+                if (timerDisp && !timerInterval) {
+                    timerDisp.innerText = val + ":00";
+                    timeLeft = val * 60; // Update the internal countdown variable
+                }
+            });
+        }
     };
 
     // ── YouTube ──
