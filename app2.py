@@ -320,9 +320,11 @@ def save_session():
 def save_feedback():
     data = request.get_json()
     user_id = data.get('user_id', 'guest')
-    rating = data.get('rating')
-    comment = data.get('comment')
+    rating = data.get('rating')           # The 0-100 score from the Arc Dial
+    after_label = data.get('after_label') # e.g., "Flowing", "Settled"
+    before_state = data.get('before_state') # e.g., "Scattered, Tired"
     mood_context = data.get('mood_context')
+    comment = data.get('comment', '')
 
     conn = get_db_connection()
     if not conn: 
@@ -330,12 +332,14 @@ def save_feedback():
     
     try:
         cur = conn.cursor()
+        # We include after_label and before_state in the INSERT
         cur.execute("""
-            INSERT INTO feedback (user_id, rating, comment, mood_context, timestamp) 
-            VALUES (%s, %s, %s, %s, now())
-        """, (user_id, rating, comment, mood_context))
+            INSERT INTO feedback (user_id, rating, after_label, before_state, mood_context, comment, timestamp) 
+            VALUES (%s, %s, %s, %s, %s, %s, now())
+        """, (user_id, rating, after_label, before_state, mood_context, comment))
+        
         conn.commit()
-        return jsonify({"status": "success", "message": "Feedback recorded"}), 201
+        return jsonify({"status": "success", "message": "Reflection recorded"}), 201
     except Exception as e:
         print(f"Feedback Save Error: {e}")
         return jsonify({"status": "error", "message": str(e)}), 500
@@ -392,11 +396,14 @@ def admin_summary():
 def health_check():
     return jsonify({"status": "online"}), 200
 
+# --- SINGLE ENTRY POINT ---
 if __name__ == "__main__":
-    app.run(debug=True)
-
-
-init_db()
-if __name__ == '__main__':
+    # 1. Initialize the database first (Self-healing logic)
+    init_db()
+    
+    # 2. Start the server with Render-compatible settings
+    # We use '0.0.0.0' so Render can route traffic to the container
+    # We use the PORT env var provided by Render
     port = int(os.environ.get("PORT", 10000))
-    app.run(host='0.0.0.0', port=port)
+    print(f"ZenTune Server Awakening on Port {port}...")
+    app.run(host='0.0.0.0', port=port, debug=False)
