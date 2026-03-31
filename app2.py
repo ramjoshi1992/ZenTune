@@ -354,20 +354,35 @@ def admin_summary():
         total_sessions, total_seconds = cur.fetchone()
         
         # Get Recent Feedback
-        SELECT user_id, rating, after_label, before_state, mood_context, timestamp 
+        # Corrected Fetch: Matches the Arc Dial and Token data
+        cur.execute("""
+            SELECT user_id, rating, after_label, before_state, mood_context, timestamp 
             FROM feedback 
             ORDER BY timestamp DESC LIMIT 20
         """)
+        
         rows = cur.fetchall()
-        feedback_list = [{
-            "user": r[0], 
-            "score": r[1],  # This is the 0-100 rating
-            "label": r[2],  # This is the 'Flowing/Settled' label
-            "before": r[3], # This is the 'Scattered/Tired' tokens
-            "mood": r[4], 
-            "time": r[5].strftime("%Y-%m-%d %H:%M")
-        } for r in rows]
-        return jsonify({"reflections": feedback_list, "global_sessions": total_sessions, "global_hours": total_hours})
+        
+        feedback_list = []
+        for r in rows:
+            feedback_list.append({
+                "user": r[0], 
+                "score": r[1],   # The 0-100 Intensity
+                "label": r[2],   # The 'Flowing/Settled' label
+                "before": r[3],  # The 'Scattered/Tired' tokens
+                "mood": r[4],    # The initial mood context
+                "time": r[5].strftime("%Y-%m-%d %H:%M") if r[5] else "N/A"
+            })
+
+        return jsonify({
+            "reflections": feedback_list, 
+            "global_sessions": total_sessions or 0, 
+            "global_hours": round((total_seconds or 0) / 3600, 1)
+        })
+
+    except Exception as e:
+        print(f"Admin API Error: {e}")
+        return jsonify({"status": "error", "message": str(e)}), 500
     finally:
         cur.close()
         conn.close()
