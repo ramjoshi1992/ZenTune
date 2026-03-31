@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>ZenTune | Admin Sanctum</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --bg: #0b0e14; --card: #161b22; --accent: #9d96ff; --text: #efefff; --border: rgba(255,255,255,0.1); }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 40px; }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px; }
+        .stat-box { background: var(--card); padding: 20px; border-radius: 18px; border: 1px solid var(--border); text-align: center; }
+        .stat-box h2 { font-size: 32px; color: var(--accent); margin: 10px 0; }
+        
+        table { width: 100%; border-collapse: collapse; background: var(--card); border-radius: 18px; overflow: hidden; }
+        th { background: rgba(157, 150, 255, 0.1); text-align: left; padding: 15px; font-size: 12px; text-transform: uppercase; letter-spacing: 1px; }
+        td { padding: 15px; border-bottom: 1px solid var(--border); font-size: 14px; }
+        .rating-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 8px; }
+    </style>
+</head>
+<body>
+    <h1>Admin Sanctum</h1>
+    
+    <div class="grid">
+        <div class="stat-box"><span>Total Zen Sessions</span><h2 id="totalSessions">0</h2></div>
+        <div class="stat-box"><span>Global Focus Hours</span><h2 id="totalHours">0</h2></div>
+    </div>
+
+    <h3>Recent Reflections</h3>
+    <table>
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>State</th>
+                <th>Mood Context</th>
+                <th>Reflection</th>
+                <th>Date</th>
+            </tr>
+        </thead>
+        <tbody id="feedbackTable"></tbody>
+    </table>
+
+    <script>
+        const API_BASE = 'https://zentune.onrender.com';
+
+        async function loadData() {
+            const res = await fetch(`${API_BASE}/admin/summary`);
+            const data = await res.json();
+            
+            document.getElementById('totalSessions').innerText = data.global_sessions;
+            document.getElementById('totalHours').innerText = data.global_hours;
+
+            const table = document.getElementById('feedbackTable');
+            const symbols = { 5: "🪷", 4: "🌿", 3: "🪵", 2: "💧", 1: "☁️" };
+            
+            table.innerHTML = data.reflections.map(r => `
+                <tr>
+                    <td><b>${r.user}</b></td>
+                    <td>${symbols[r.rating] || '⭐'}</td>
+                    <td style="opacity:0.6">${r.mood}</td>
+                    <td>${r.comment || '<i>No thoughts shared</i>'}</td>
+                    <td style="font-size:11px">${r.time}</td>
+                </tr>
+            `).join('');
+        }
+
+        loadData();
+        setInterval(loadData, 30000); // Refresh every 30s
+    </script>
+</body>
+</html>
