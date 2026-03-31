@@ -330,7 +330,32 @@ def save_feedback():
         cur.close()
         conn.close()
 
-# ... All your main routes ...
+@app.route('/admin/summary', methods=['GET'])
+def admin_summary():
+    conn = get_db_connection()
+    if not conn: return jsonify({"status": "error"}), 500
+    cur = conn.cursor()
+    try:
+        # Get Global Totals
+        cur.execute("SELECT COUNT(*), SUM(duration) FROM history")
+        total_sessions, total_seconds = cur.fetchone()
+        
+        # Get Recent Feedback
+        cur.execute("SELECT user_id, rating, comment, mood_context, timestamp FROM feedback ORDER BY timestamp DESC LIMIT 20")
+        feedback_rows = cur.fetchall()
+        feedback_list = [{
+            "user": r[0], "rating": r[1], "comment": r[2], "mood": r[3], "time": r[4].strftime("%Y-%m-%d %H:%M")
+        } for r in feedback_rows]
+
+        return jsonify({
+            "global_sessions": total_sessions,
+            "global_hours": round((total_seconds or 0) / 3600, 1),
+            "reflections": feedback_list
+        })
+    finally:
+        cur.close()
+        conn.close()
+
 
 @app.route('/health')
 def health_check():
