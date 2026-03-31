@@ -38,8 +38,6 @@ def init_db():
     try:
         cur = conn.cursor()
 
-        # cur.execute("DELETE FROM history;")
-        
         # 1. Users Table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS users (
@@ -65,7 +63,7 @@ def init_db():
             )
         ''')
 
-        # 3. Feedback Table (NEW)
+        # 3. Feedback Table
         cur.execute('''
             CREATE TABLE IF NOT EXISTS feedback (
                 id SERIAL PRIMARY KEY,
@@ -77,9 +75,7 @@ def init_db():
             )
         ''')
 
-        # 4. SELF-HEALING: Check for both 'mood' and 'frequency'
-        # This handles cases where the table was created in an older version of your app
-        # 1. Ensure HISTORY table is ready for session tracking
+        # 4. Self-Healing for History Table
         history_cols = ['mood', 'frequency']
         for col in history_cols:
             cur.execute("""
@@ -90,8 +86,7 @@ def init_db():
                 cur.execute(f"ALTER TABLE history ADD COLUMN {col} TEXT;")
                 print(f"Added to history: {col}")
 
-        # 2. Ensure FEEDBACK table is ready for the new Arc Dial & Tokens
-        # 'after_label' matches the 'after_label' key in your index.html JS
+        # 5. Self-Healing for Feedback Table (Matches index.html logic)
         feedback_cols = ['before_state', 'after_label', 'mood_context']
         for col in feedback_cols:
             cur.execute("""
@@ -101,6 +96,20 @@ def init_db():
             if not cur.fetchone():
                 cur.execute(f"ALTER TABLE feedback ADD COLUMN {col} TEXT;")
                 print(f"Added to feedback: {col}")
+
+        # Commit all changes to the database
+        conn.commit()
+        print("Database initialized successfully.")
+
+    except Exception as e:
+        # This catches errors and prevents the app from crashing silently
+        print(f"Error during init_db: {e}")
+    
+    finally:
+        # Crucial for Render: Always close the connection to avoid leaks
+        if conn:
+            cur.close()
+            conn.close()
 
 # --- HELPER ---
 def get_search_query(mood):
