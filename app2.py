@@ -354,17 +354,20 @@ def admin_summary():
         total_sessions, total_seconds = cur.fetchone()
         
         # Get Recent Feedback
-        cur.execute("SELECT user_id, rating, comment, mood_context, timestamp FROM feedback ORDER BY timestamp DESC LIMIT 20")
-        feedback_rows = cur.fetchall()
+        SELECT user_id, rating, after_label, before_state, mood_context, timestamp 
+            FROM feedback 
+            ORDER BY timestamp DESC LIMIT 20
+        """)
+        rows = cur.fetchall()
         feedback_list = [{
-            "user": r[0], "rating": r[1], "comment": r[2], "mood": r[3], "time": r[4].strftime("%Y-%m-%d %H:%M")
-        } for r in feedback_rows]
-
-        return jsonify({
-            "global_sessions": total_sessions,
-            "global_hours": round((total_seconds or 0) / 3600, 1),
-            "reflections": feedback_list
-        })
+            "user": r[0], 
+            "score": r[1],  # This is the 0-100 rating
+            "label": r[2],  # This is the 'Flowing/Settled' label
+            "before": r[3], # This is the 'Scattered/Tired' tokens
+            "mood": r[4], 
+            "time": r[5].strftime("%Y-%m-%d %H:%M")
+        } for r in rows]
+        return jsonify({"reflections": feedback_list, "global_sessions": total_sessions, "global_hours": total_hours})
     finally:
         cur.close()
         conn.close()
