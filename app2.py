@@ -17,7 +17,20 @@ os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": ["https://ramjoshi1992.github.io", "http://127.0.0.1:5500"]}})
+CORS(app, resources={
+    r"/*": {
+        "origins": ["https://ramjoshi1992.github.io", "http://127.0.0.1:5500"],
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers.add('Access-Control-Allow-Origin', 'https://ramjoshi1992.github.io')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+    return response
 
 # --- DATABASE LOGIC (PostgreSQL) ---
 def get_db_connection():
@@ -396,7 +409,8 @@ def admin_summary():
 
 @app.route('/health')
 def health_check():
-    return jsonify({"status": "online"}), 200
+    # Don't check the DB here, just confirm the server is running
+    return jsonify({"status": "online", "message": "Resonance Active"}), 200
 
 # --- SINGLE ENTRY POINT ---
 if __name__ == "__main__":
