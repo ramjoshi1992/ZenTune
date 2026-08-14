@@ -61,8 +61,9 @@ def generate_and_upload_session(mood_slug: str, session_id: str, duration_minute
     for i, prompt in enumerate(prompts):
         print(f"Generating clip {i+1}/{len(prompts)}...")
         
+        # Use direct model name 'meta/musicgen'
         output = replicate.run(
-            "meta/musicgen:6715d92ed502c771e703fc41e007d3f224deed08e3e413719d6742c58e9958a6",
+            "meta/musicgen",
             input={
                 "prompt": prompt,
                 "duration": 15,
