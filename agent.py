@@ -2,13 +2,12 @@ import os
 import tempfile
 import urllib.request
 import boto3
+import requests
 from dotenv import load_dotenv
+from pydub import AudioSegment
 
 # Load environment variables
 load_dotenv()
-
-import replicate
-from pydub import AudioSegment
 
 # ==========================================
 # CONFIGURATION
@@ -18,6 +17,9 @@ R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID")
 R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY")
 R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "zentune-sessions")
 R2_PUBLIC_DOMAIN = os.getenv("R2_PUBLIC_DOMAIN", "https://pub-fefcc3396a88474693cc19e7780eb61f.r2.dev")
+
+HF_TOKEN = os.getenv("HF_TOKEN")
+HF_API_URL = "https://router.huggingface.co/hf-inference/models/facebook/musicgen-small"
 
 def get_s3_client():
     """Initializes S3 client targeting Cloudflare R2."""
@@ -44,13 +46,24 @@ def upload_to_r2(local_file_path: str, destination_filename: str) -> str:
     return f"{clean_domain}/{destination_filename}"
 
 # ==========================================
-# GENERATION ENGINE
+# GENERATION ENGINE (Hugging Face Free Tier)
 # ==========================================
+def generate_hf_clip(prompt: str) -> bytes:
+    """Sends a request to Hugging Face's free Inference API for MusicGen."""
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    payload = {"inputs": prompt}
+    
+    response = requests.post(HF_API_URL, headers=headers, json=payload)
+    
+    if response.status_code != 200:
+        raise Exception(f"Hugging Face API Error ({response.status_code}): {response.text}")
+        
+    return response.content
+
 def generate_and_upload_session(mood_slug: str, session_id: str, duration_minutes: int = 30) -> str:
     """
-    Generates audio chunks, crossfades them into an MP3, and stores it in Cloudflare R2.
+    Generates audio chunks via Hugging Face, crossfades them, and uploads to R2.
     """
-    # Sample 15-second prompts
     prompts = [
         f"{mood_slug} ambient intro, gentle synth textures, sparse grounding drone, relaxed atmosphere",
         f"{mood_slug} core focus state, subtle rhythmic pulse, deep warm sub-bass, sustained flow state"
@@ -59,31 +72,16 @@ def generate_and_upload_session(mood_slug: str, session_id: str, duration_minute
     combined_audio = AudioSegment.empty()
     
     for i, prompt in enumerate(prompts):
-        print(f"Generating clip {i+1}/{len(prompts)}...")
+        print(f"Generating clip {i+1}/{len(prompts)} via Hugging Face...")
         
-        # Use direct model name 'meta/musicgen'
-        output = replicate.run(
-            "meta/musicgen:671ac645ce5e552cc63a54a2bbff63fcf798043055d2dac5fc9e36a837eedcfb",
-            input={
-                "prompt": prompt,
-                "duration": 15,
-                "model_version": "stereo-large"
-            }
-        )
+        audio_bytes = generate_hf_clip(prompt)
         
-        # Save temp file safely from Replicate output stream
         temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-        
-        # Handle string URLs or FileOutput objects cleanly
-        if isinstance(output, str):
-            urllib.request.urlretrieve(output, temp_file.name)
-        else:
-            with open(temp_file.name, "wb") as f:
-                f.write(output.read())
+        with open(temp_file.name, "wb") as f:
+            f.write(audio_bytes)
         
         segment = AudioSegment.from_file(temp_file.name)
         
-        # Equal-power crossfade (2000ms = 2s)
         if len(combined_audio) > 0:
             combined_audio = combined_audio.append(segment, crossfade=2000)
         else:
