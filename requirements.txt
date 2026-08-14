@@ -10,3 +10,4 @@ requests==2.31.0
 google-api-python-client
 httplib2
 pydantic==2.8.2
+numpy
