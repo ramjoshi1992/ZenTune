@@ -63,7 +63,7 @@ def generate_and_upload_session(mood_slug: str, session_id: str, duration_minute
         
         # Use direct model name 'meta/musicgen'
         output = replicate.run(
-            "meta/musicgen",
+            "meta/musicgen:671ac645ce5e552cc63a54a2bbff63fcf798043055d2dac5fc9e36a837eedcfb",
             input={
                 "prompt": prompt,
                 "duration": 15,
