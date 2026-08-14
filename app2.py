@@ -412,6 +412,43 @@ def health_check():
     # Don't check the DB here, just confirm the server is running
     return jsonify({"status": "online", "message": "Resonance Active"}), 200
 
+# --- R2 / GENERATIVE AUDIO ENDPOINTS ---
+import uuid
+import threading
+from agent import generate_and_upload_session
+
+jobs_db = {}
+
+def background_generation_task(job_id, mood, duration_minutes):
+    try:
+        jobs_db[job_id]["status"] = "processing"
+        url = generate_and_upload_session(mood, session_id=job_id, duration_minutes=duration_minutes)
+        jobs_db[job_id]["status"] = "completed"
+        jobs_db[job_id]["audio_url"] = url
+    except Exception as e:
+        jobs_db[job_id]["status"] = "failed"
+        jobs_db[job_id]["error"] = str(e)
+
+@app.route('/api/v1/sessions', methods=['POST'])
+def create_session():
+    data = request.get_json() or {}
+    mood = data.get('mood', 'focus')
+    duration = data.get('duration_minutes', 30)
+    
+    job_id = str(uuid.uuid4())
+    jobs_db[job_id] = {"status": "queued", "audio_url": None}
+    
+    thread = threading.Thread(target=background_generation_task, args=(job_id, mood, duration))
+    thread.start()
+    
+    return jsonify({"job_id": job_id, "status": "queued"}), 202
+
+@app.route('/api/v1/sessions/<job_id>', methods=['GET'])
+def get_session_status(job_id):
+    if job_id not in jobs_db:
+        return jsonify({"status": "error", "message": "Session not found"}), 404
+    return jsonify(jobs_db[job_id]), 200
+
 # --- SINGLE ENTRY POINT ---
 if __name__ == "__main__":
     # 1. Initialize the database first (Self-healing logic)
