@@ -1,8 +1,12 @@
 Flask==3.0.2
 Flask-Cors==4.0.0
-requests==2.31.0
 gunicorn==21.2.0
-httplib2
-python-dotenv
-google-api-python-client
 psycopg2-binary
+python-dotenv==1.0.1
+boto3==1.34.131
+replicate==0.30.0
+pydub==0.25.1
+requests==2.31.0
+google-api-python-client
+httplib2
+pydantic==2.8.2
