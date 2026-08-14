@@ -1,8 +1,8 @@
 import os
 import tempfile
-import urllib.request
+import math
+import random
 import boto3
-import requests
 from dotenv import load_dotenv
 from pydub import AudioSegment
 
@@ -17,9 +17,6 @@ R2_ACCESS_KEY_ID = os.getenv("R2_ACCESS_KEY_ID")
 R2_SECRET_ACCESS_KEY = os.getenv("R2_SECRET_ACCESS_KEY")
 R2_BUCKET_NAME = os.getenv("R2_BUCKET_NAME", "zentune-sessions")
 R2_PUBLIC_DOMAIN = os.getenv("R2_PUBLIC_DOMAIN", "https://pub-fefcc3396a88474693cc19e7780eb61f.r2.dev")
-
-HF_TOKEN = os.getenv("HF_TOKEN")
-HF_API_URL = "https://router.huggingface.co/hf-inference/models/facebook/musicgen-small"
 
 def get_s3_client():
     """Initializes S3 client targeting Cloudflare R2."""
@@ -46,49 +43,66 @@ def upload_to_r2(local_file_path: str, destination_filename: str) -> str:
     return f"{clean_domain}/{destination_filename}"
 
 # ==========================================
-# GENERATION ENGINE (Hugging Face Free Tier)
+# PROCEDURAL AUDIO GENERATION ENGINE
 # ==========================================
-def generate_hf_clip(prompt: str) -> bytes:
-    """Sends a request to Hugging Face's free Inference API for MusicGen."""
-    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
-    payload = {"inputs": prompt}
+def generate_procedural_drone(duration_sec: int = 15, base_freq: float = 130.81) -> AudioSegment:
+    """Generates a rich, layered ambient drone/pad segment using pure math."""
+    sample_rate = 44100
+    total_samples = sample_rate * duration_sec
+    buffer = bytearray()
     
-    response = requests.post(HF_API_URL, headers=headers, json=payload)
+    # Harmonics for a warm, meditative chord structure (Root, Fifth, Octave)
+    harmonics = [1.0, 1.5, 2.0, 3.0]
     
-    if response.status_code != 200:
-        raise Exception(f"Hugging Face API Error ({response.status_code}): {response.text}")
+    for i in range(total_samples):
+        t = i / sample_rate
+        sample = 0.0
         
-    return response.content
+        # Add smooth slow modulation for organic movement
+        lfo = math.sin(2 * math.pi * 0.1 * t) * 0.2 + 0.8
+        
+        for h in harmonics:
+            # Sine wave combination with gentle envelope fading
+            envelope = min(t / 2.0, 1.0) * min((duration_sec - t) / 2.0, 1.0)
+            wave = math.sin(2 * math.pi * (base_freq * h) * t)
+            sample += wave * (1.0 / h) * envelope * lfo
+            
+        # Normalize and convert to 16-bit PCM integer
+        sample = max(min(sample / sum([1.0/h for h in harmonics]), 1.0), -1.0)
+        int_val = int(sample * 32767)
+        buffer.extend(int_val.to_bytes(2, byteorder='little', signed=True))
+        
+    segment = AudioSegment(
+        data=bytes(buffer),
+        sample_width=2,
+        frame_rate=sample_rate,
+        channels=1
+    )
+    return segment
 
 def generate_and_upload_session(mood_slug: str, session_id: str, duration_minutes: int = 30) -> str:
     """
-    Generates audio chunks via Hugging Face, crossfades them, and uploads to R2.
+    Generates procedural audio sequence, crossfades them, and uploads to Cloudflare R2.
     """
-    prompts = [
-        f"{mood_slug} ambient intro, gentle synth textures, sparse grounding drone, relaxed atmosphere",
-        f"{mood_slug} core focus state, subtle rhythmic pulse, deep warm sub-bass, sustained flow state"
-    ]
+    print(f"Synthesizing procedural session for mood: {mood_slug}...")
     
     combined_audio = AudioSegment.empty()
     
-    for i, prompt in enumerate(prompts):
-        print(f"Generating clip {i+1}/{len(prompts)} via Hugging Face...")
-        
-        audio_bytes = generate_hf_clip(prompt)
-        
-        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
-        with open(temp_file.name, "wb") as f:
-            f.write(audio_bytes)
-        
-        segment = AudioSegment.from_file(temp_file.name)
+    # Build a continuous sequence of 15-second ambient blocks to match desired duration
+    total_clips = max(1, int((duration_minutes * 60) / 15))
+    
+    # Base frequencies mapped to relaxing states (e.g., C3 = 130.81 Hz, G3 = 196.00 Hz)
+    frequencies = [130.81, 146.83, 164.81, 196.00, 220.00]
+    
+    for i in range(min(total_clips, 120)) :  # Safety limit for background execution
+        freq = random.choice(frequencies)
+        segment = generate_procedural_drone(duration_sec=15, base_freq=freq)
         
         if len(combined_audio) > 0:
-            combined_audio = combined_audio.append(segment, crossfade=2000)
+            combined_audio = combined_audio.append(segment, crossfade=3000)
         else:
             combined_audio = segment
             
-        os.remove(temp_file.name)
-        
     # Export compressed MP3
     temp_mp3 = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
     combined_audio.export(temp_mp3.name, format="mp3", bitrate="192k")
