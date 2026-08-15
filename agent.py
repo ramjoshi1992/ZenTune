@@ -72,23 +72,47 @@ def generate_procedural_drone(duration_sec: int = 15, base_freq: float = 130.81)
     )
 
 def generate_and_upload_session(mood_slug: str, session_id: str, duration_minutes: int = 30) -> str:
-    print(f"Synthesizing fast procedural session for mood: {mood_slug} ({duration_minutes} mins)...")
+    print(f"Synthesizing progressive session for mood: {mood_slug} ({duration_minutes} mins)...")
     combined_audio = AudioSegment.empty()
     
-    # Calculate total 15-second segments needed to match requested minutes
-    total_clips = max(1, int((duration_minutes * 60) / 15))
+    total_target_ms = duration_minutes * 60 * 1000
+    segment_duration_ms = 15000  # 15 seconds per block
+    crossfade_ms = 2000          # 2-second smooth crossfade
     
-    frequencies = [130.81, 146.83, 164.81, 196.00, 220.00]
+    # Calculate exact number of clips needed accounting for crossfade overlap
+    effective_step_ms = segment_duration_ms - crossfade_ms
+    total_clips = max(1, int((total_target_ms - crossfade_ms) / effective_step_ms))
     
-    for _ in range(total_clips):
-        freq = random.choice(frequencies)
-        segment = generate_procedural_drone(duration_sec=15, base_freq=freq)
+    params = get_mood_parameters(mood_slug)
+    base_freqs = params["base_freqs"]
+    
+    for i in range(total_clips):
+        # Create a musical progression arc based on session phase
+        progress = i / total_clips
+        if progress < 0.15:
+            # Intro: softer, simpler root frequencies
+            freq = base_freqs[0]
+        elif progress > 0.85:
+            # Outro: winding down back to root
+            freq = base_freqs[0]
+        else:
+            # Core: active exploration of mood-based frequencies
+            freq = random.choice(base_freqs)
+            
+        segment = generate_procedural_drone(duration_sec=15, mood_slug=mood_slug, custom_freq=freq)
+        
         if len(combined_audio) > 0:
-            combined_audio = combined_audio.append(segment, crossfade=3000)
+            combined_audio = combined_audio.append(segment, crossfade=crossfade_ms)
         else:
             combined_audio = segment
             
-    # Export compressed MP3
+    # Trim or pad precisely to requested duration if minor variance occurs
+    if len(combined_audio) > total_target_ms:
+        combined_audio = combined_audio[:total_target_ms]
+    elif len(combined_audio) < total_target_ms:
+        # Pad with silence if slightly short
+        combined_audio += AudioSegment.silent(duration=(total_target_ms - len(combined_audio)))
+            
     temp_mp3 = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
     combined_audio.export(temp_mp3.name, format="mp3", bitrate="192k")
     
