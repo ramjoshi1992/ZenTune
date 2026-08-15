@@ -72,13 +72,15 @@ def generate_procedural_drone(duration_sec: int = 15, base_freq: float = 130.81)
     )
 
 def generate_and_upload_session(mood_slug: str, session_id: str, duration_minutes: int = 30) -> str:
-    print(f"Synthesizing fast procedural session for mood: {mood_slug}...")
+    print(f"Synthesizing fast procedural session for mood: {mood_slug} ({duration_minutes} mins)...")
     combined_audio = AudioSegment.empty()
     
-    # Generate 5 clips to form a smooth looping ambient texture block
+    # Calculate total 15-second segments needed to match requested minutes
+    total_clips = max(1, int((duration_minutes * 60) / 15))
+    
     frequencies = [130.81, 146.83, 164.81, 196.00, 220.00]
     
-    for _ in range(5):
+    for _ in range(total_clips):
         freq = random.choice(frequencies)
         segment = generate_procedural_drone(duration_sec=15, base_freq=freq)
         if len(combined_audio) > 0:
