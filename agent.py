@@ -104,6 +104,54 @@ def generate_procedural_drone(duration_sec: int = 15, mood_slug: str = "deepwork
         channels=1
     )
 
+# ==========================================
+# AUDIO GENERATION ENGINE
+# ==========================================
+def generate_procedural_drone(duration_sec: int = 15, mood_slug: str = "deepwork", progress_ratio: float = 0.5) -> AudioSegment:
+    sample_rate = 44100
+    t = np.linspace(0, duration_sec, sample_rate * duration_sec, endpoint=False)
+    
+    params = get_mood_parameters(mood_slug)
+    base_freq = random.choice(params["base_freqs"])
+    
+    # Macro-progression: Shift richness based on session timeline
+    richness_modifier = 0.5 + 0.5 * np.sin(progress_ratio * np.pi)
+    
+    wave = np.zeros_like(t)
+    harmonics = [1.0, 1.498, 2.0, 2.5]
+    weights = [1.0, 0.7 * richness_modifier, 0.5, 0.3 * richness_modifier]
+    
+    for i, (h, w) in enumerate(zip(harmonics, weights)):
+        freq = base_freq * h
+        drift = np.sin(2 * np.pi * 0.05 * t) * (0.8 + i * 0.2)
+        wave += np.sin(2 * np.pi * freq * t + drift) * w
+        
+    # Layer filtered white noise for ambient warmth
+    noise = np.random.normal(0, params["noise_level"] * 1.5, len(t))
+    noise = np.convolve(noise, np.ones(441)/441, mode='same')
+    wave += noise
+    
+    # Internal breathing LFO volume swell
+    lfo = 0.8 + 0.2 * np.sin(2 * np.pi * 0.1 * t)
+    wave *= lfo
+    
+    fade_samples = int(sample_rate * 2.0)
+    envelope = np.ones_like(t)
+    envelope[:fade_samples] = np.linspace(0, 1, fade_samples)
+    envelope[-fade_samples:] = np.linspace(1, 0, fade_samples)
+    
+    wave *= envelope
+    wave /= np.max(np.abs(wave))
+    
+    audio_int16 = (wave * 32767).astype(np.int16)
+    
+    return AudioSegment(
+        data=audio_int16.tobytes(),
+        sample_width=2,
+        frame_rate=sample_rate,
+        channels=1
+    )
+
 def generate_and_upload_session(mood_slug: str, session_id: str, duration_minutes: int = 30) -> str:
     print(f"Synthesizing progressive session for mood: {mood_slug} ({duration_minutes} mins)...")
     combined_audio = AudioSegment.empty()
@@ -115,19 +163,9 @@ def generate_and_upload_session(mood_slug: str, session_id: str, duration_minute
     effective_step_ms = segment_duration_ms - crossfade_ms
     total_clips = max(1, int((total_target_ms - crossfade_ms) / effective_step_ms))
     
-    params = get_mood_parameters(mood_slug)
-    base_freqs = params["base_freqs"]
-    
     for i in range(total_clips):
         progress = i / total_clips
-        if progress < 0.15:
-            freq = base_freqs[0]
-        elif progress > 0.85:
-            freq = base_freqs[0]
-        else:
-            freq = random.choice(base_freqs)
-            
-        segment = generate_procedural_drone(duration_sec=15, mood_slug=mood_slug, custom_freq=freq)
+        segment = generate_procedural_drone(duration_sec=15, mood_slug=mood_slug, progress_ratio=progress)
         
         if len(combined_audio) > 0:
             combined_audio = combined_audio.append(segment, crossfade=crossfade_ms)
